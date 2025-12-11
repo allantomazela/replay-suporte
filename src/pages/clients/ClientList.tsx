@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 
 export default function ClientList() {
   const { clients, toggleClientStatus } = useAppContext()
@@ -67,79 +68,109 @@ export default function ClientList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
-        <h1 className="text-3xl font-bold">Gestão de Clientes</h1>
-        <Button onClick={handleNew} className="w-full md:w-auto">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Gestão de Clientes
+        </h1>
+        <Button onClick={handleNew} className="w-full md:w-auto shadow-sm">
           <Plus className="mr-2 h-4 w-4" /> Novo Cliente
         </Button>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border space-y-4">
+      <div className="bg-card p-4 rounded-lg shadow-sm border space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar Cliente (nome, email, clube)..."
-            className="pl-9"
+            className="pl-9 bg-background"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Telefone</TableHead>
-                <TableHead>Time/Clube</TableHead>
-                <TableHead className="hidden lg:table-cell">
+                <TableHead className="font-semibold text-foreground">
+                  Nome
+                </TableHead>
+                <TableHead className="hidden md:table-cell font-semibold text-foreground">
+                  Email
+                </TableHead>
+                <TableHead className="hidden md:table-cell font-semibold text-foreground">
+                  Telefone
+                </TableHead>
+                <TableHead className="font-semibold text-foreground">
+                  Time/Clube
+                </TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold text-foreground">
                   Data de Aquisição
                 </TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right font-semibold text-foreground">
+                  Ações
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredClients.map((client) => (
                 <TableRow
                   key={client.id}
-                  className={!client.active ? 'opacity-50 bg-muted/50' : ''}
+                  className={cn(
+                    'transition-colors',
+                    !client.active && 'opacity-60 bg-muted/30',
+                  )}
                 >
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="font-medium text-foreground">
+                    {client.name}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
                     {client.email}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
                     {client.phone}
                   </TableCell>
-                  <TableCell>{client.club}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="text-foreground">
+                    {client.club}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">
                     {new Date(client.acquisitionDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" asChild>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                      >
                         <Link to={`/clients/${client.id}`}>
-                          <Eye className="h-4 w-4 text-blue-500" />
+                          <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           <span className="sr-only">Visualizar</span>
                         </Link>
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="hover:bg-amber-50 dark:hover:bg-amber-950/30"
                         onClick={() => handleEdit(client)}
                       >
-                        <Edit className="h-4 w-4 text-yellow-600" />
+                        <Edit className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <span className="sr-only">Editar</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className={cn(
+                          client.active
+                            ? 'hover:bg-red-50 dark:hover:bg-red-950/30'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+                        )}
                         onClick={() => setDeleteId(client.id)}
                       >
                         {client.active ? (
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                         ) : (
-                          <UserX className="h-4 w-4 text-gray-500" />
+                          <UserX className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="sr-only">Desativar</span>
                       </Button>
@@ -151,7 +182,7 @@ export default function ClientList() {
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="text-center py-8 text-muted-foreground"
+                    className="text-center py-12 text-muted-foreground"
                   >
                     Nenhum cliente encontrado.
                   </TableCell>

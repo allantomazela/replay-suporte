@@ -27,24 +27,34 @@ export function SidebarContent({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   return (
-    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
-      <div className="p-6 flex items-center justify-center lg:justify-start h-16">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 bg-primary rounded flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-bold text-lg">R</span>
+    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border shadow-[1px_0_20px_0_rgba(0,0,0,0.02)]">
+      {/* Header / Brand */}
+      <div className="p-6 flex items-center h-20 mb-2">
+        <div className="flex items-center gap-3 w-full">
+          <div className="h-10 w-10 bg-gradient-to-br from-sidebar-primary to-orange-400 rounded-xl shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0 transition-transform hover:scale-105">
+            <span className="text-sidebar-primary-foreground font-bold text-xl">
+              R
+            </span>
           </div>
-          <span
+          <div
             className={cn(
-              'font-bold text-xl text-sidebar-foreground',
-              !isMobile && 'hidden lg:block',
+              'flex flex-col',
+              !isMobile &&
+                'hidden lg:flex opacity-0 lg:opacity-100 transition-opacity duration-300',
             )}
           >
-            Replay
-          </span>
+            <span className="font-bold text-lg tracking-tight text-sidebar-foreground">
+              Replay
+            </span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">
+              Suporte
+            </span>
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto">
         {navOrder.map((id) => {
           const item = NAV_CONFIG[id]
           const prefs = navPreferences[id]
@@ -56,36 +66,56 @@ export function SidebarContent({
 
           return (
             <TooltipProvider key={item.path}>
-              <Tooltip delayDuration={0}>
+              <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group relative',
+                        'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative',
                         isActive
-                          ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
                       )
                     }
                     onClick={() => onCloseMobile?.()}
                   >
-                    <LinkIcon className="h-5 w-5 shrink-0" strokeWidth={1.5} />
-                    <span
-                      className={cn(
-                        'font-medium whitespace-nowrap leading-none',
-                        !isMobile && 'hidden lg:block',
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                    {!isMobile && (
-                      <span className="lg:hidden sr-only">{item.label}</span>
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-sidebar-primary rounded-r-full" />
+                        )}
+                        <LinkIcon
+                          className={cn(
+                            'h-[1.15rem] w-[1.15rem] shrink-0 transition-transform duration-200 group-hover:scale-110',
+                            isActive
+                              ? 'text-sidebar-primary'
+                              : 'text-muted-foreground group-hover:text-sidebar-foreground',
+                          )}
+                          strokeWidth={isActive ? 2.5 : 2}
+                        />
+                        <span
+                          className={cn(
+                            'text-sm whitespace-nowrap leading-none transition-all',
+                            !isMobile && 'hidden lg:block',
+                          )}
+                        >
+                          {item.label}
+                        </span>
+                        {!isMobile && (
+                          <span className="lg:hidden sr-only">
+                            {item.label}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 </TooltipTrigger>
                 {!isMobile && (
-                  <TooltipContent side="right" className="lg:hidden">
+                  <TooltipContent
+                    side="right"
+                    className="lg:hidden font-medium"
+                  >
                     {item.label}
                   </TooltipContent>
                 )}
@@ -93,30 +123,31 @@ export function SidebarContent({
             </TooltipProvider>
           )
         })}
+      </nav>
 
+      {/* Footer Actions */}
+      <div className="p-3 mt-auto space-y-3">
+        {/* Settings Button */}
         <TooltipProvider>
-          <Tooltip delayDuration={0}>
+          <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 className={cn(
-                  'w-full justify-start mt-4 px-4 py-3 h-auto',
+                  'w-full justify-start h-10 px-3 text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
                   !isMobile && 'justify-center lg:justify-start',
                 )}
                 onClick={() => setIsSettingsOpen(true)}
               >
-                <Settings className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+                <Settings
+                  className="h-[1.15rem] w-[1.15rem] shrink-0"
+                  strokeWidth={2}
+                />
                 <span
-                  className={cn(
-                    'font-medium whitespace-nowrap ml-3 leading-none',
-                    !isMobile && 'hidden lg:block',
-                  )}
+                  className={cn('text-sm ml-3', !isMobile && 'hidden lg:block')}
                 >
-                  Personalizar Menu
+                  Personalizar
                 </span>
-                {!isMobile && (
-                  <span className="lg:hidden sr-only">Personalizar</span>
-                )}
               </Button>
             </TooltipTrigger>
             {!isMobile && (
@@ -126,38 +157,59 @@ export function SidebarContent({
             )}
           </Tooltip>
         </TooltipProvider>
-      </nav>
 
-      <div className="p-4 border-t border-sidebar-border mt-auto">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <Avatar className="h-9 w-9 border border-sidebar-border">
+        <div className="border-t border-sidebar-border my-2" />
+
+        {/* User Profile */}
+        <div
+          className={cn(
+            'flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/30 border border-transparent hover:border-sidebar-border transition-all',
+            !isMobile && 'justify-center lg:justify-start',
+          )}
+        >
+          <Avatar className="h-8 w-8 border border-sidebar-border shadow-sm">
             <AvatarImage src={user?.avatar} />
-            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback className="text-xs bg-sidebar-primary text-sidebar-primary-foreground font-bold">
+              {user?.name.charAt(0)}
+            </AvatarFallback>
           </Avatar>
           <div
             className={cn(
-              'overflow-hidden',
+              'overflow-hidden flex-1',
               !isMobile ? 'hidden lg:block' : 'block',
             )}
           >
-            <p className="text-sm font-medium truncate text-sidebar-foreground">
-              {user?.name}
+            <p className="text-sm font-semibold truncate text-sidebar-foreground">
+              {user?.name.split(' ')[0]}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.email}
+            <p className="text-[10px] text-muted-foreground truncate font-medium">
+              {user?.role === 'admin' ? 'Administrador' : 'Agente'}
             </p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mr-1',
+              !isMobile && 'hidden lg:flex',
+            )}
+            onClick={logout}
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
+
+        {/* Mobile Logout (Separate because layout differs) */}
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 px-2',
-            !isMobile && 'justify-center lg:justify-start',
+            'w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 lg:hidden',
           )}
           onClick={logout}
         >
-          <LogOut className="h-5 w-5 lg:mr-2 shrink-0" strokeWidth={1.5} />
-          <span className={cn(!isMobile && 'hidden lg:block')}>Sair</span>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair
         </Button>
       </div>
 

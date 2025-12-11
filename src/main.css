@@ -1,6 +1,5 @@
 /* Global styles - Theme, font, utilities, animations and global components */
 
-/* CHANGE THE FONT BELOW TO WHATEVER YOU WANT */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
 @tailwind base;
@@ -9,12 +8,14 @@
 
 @layer base {
   :root {
-    /* Brand Colors based on Design System */
-    /* Primary: #FF6B35 (Orange) */
-    --primary: 16 100% 60%;
+    /* Brand Colors based on Design System - Adjusted for better contrast */
+
+    /* Primary: Adjusted to a deeper orange for better contrast with white text */
+    /* Was: 16 100% 60% (#FF6B35) -> New: 16 90% 48% (#E85D2A) */
+    --primary: 16 90% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* Background: #F7FAFC (Grayish) */
+    /* Background: #F7FAFC (Grayish) - Kept clean */
     --background: 210 20% 98%;
     --foreground: 222.2 84% 4.9%;
 
@@ -26,71 +27,71 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Secondary: #E2E8F0 (Light Gray for backgrounds/borders) */
+    /* Secondary: #E2E8F0 */
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47% 11%;
 
-    /* Muted: #F7FAFC */
+    /* Muted: Adjusted for better readability */
     --muted: 210 40% 96%;
-    /* Darkened muted-foreground for better contrast (was 215.4 16.3% 46.9%) */
-    --muted-foreground: 215.4 25% 40%;
+    /* Darkened muted-foreground for better contrast (was 40% lightness, now 30%) */
+    --muted-foreground: 215.4 25% 35%;
 
-    /* Accent: #FFF5F0 (Light Orange Tint) */
+    /* Accent: Light Orange Tint */
     --accent: 16 100% 97%;
-    --accent-foreground: 16 100% 60%;
+    --accent-foreground: 16 90% 48%;
 
     /* Destructive: #F56565 (Red) */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 16 100% 60%;
+    --border: 214.3 31.8% 90%;
+    --input: 214.3 31.8% 90%;
+    --ring: 16 90% 48%;
 
     --radius: 0.5rem;
 
+    /* Sidebar - Light Mode */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 16 90% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 16 90% 48%;
+    --sidebar-border: 214.3 31.8% 90%;
+    --sidebar-ring: 16 90% 48%;
 
     /* Chart Colors */
-    --chart-1: 16 100% 60%; /* Primary Orange */
-    --chart-2: 173 58% 39%; /* Teal/Greenish */
-    --chart-3: 197 37% 24%; /* Dark Blue */
-    --chart-4: 43 74% 66%; /* Yellow */
-    --chart-5: 27 87% 67%; /* Light Orange */
+    --chart-1: 16 90% 48%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
 
     /* Semantic Colors Custom Vars */
-    --success: 145 46% 50%;
-    --warning: 28 85% 57%;
-    --info: 207 73% 57%;
+    --success: 142 76% 36%; /* Darker green for contrast */
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
   }
 
   .dark {
-    /* Dark mode adjustments - adhering to specification colors but inverted where necessary */
-    --background: 222.2 84% 4.9%;
+    /* Dark mode adjustments - Improved contrast */
+    --background: 222.2 47% 11%; /* Darker background */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 47% 10%; /* Slightly lighter than bg */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 47% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 16 100% 60%;
+    --primary: 16 90% 55%; /* Slightly brighter for dark mode */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
-    /* Lightened muted-foreground for better contrast in dark mode */
-    --muted-foreground: 215 20% 75%;
+    --muted-foreground: 215 20% 70%; /* Lighter for readability */
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
@@ -98,25 +99,28 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 16 100% 60%;
+    --border: 217.2 32.6% 20%;
+    --input: 217.2 32.6% 20%;
+    --ring: 16 90% 55%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Sidebar - Dark Mode */
+    --sidebar-background: 222.2 47% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 16 90% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 20%;
+    --sidebar-ring: 16 90% 55%;
+
+    --success: 142 70% 50%;
   }
 
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }
 
