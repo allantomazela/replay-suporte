@@ -25,12 +25,12 @@ import { useAppContext } from '@/context/AppContext'
 
 const clientSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
+  city: z.string().min(2, 'Cidade/Estado deve ter pelo menos 2 caracteres'),
   phone: z.string().min(10, 'Telefone inválido'),
-  club: z.string().min(2, 'Clube deve ter pelo menos 2 caracteres'),
-  acquisitionDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Data inválida',
-  }),
+  arenaCode: z.string().min(2, 'Código deve ter pelo menos 2 caracteres'),
+  arenaName: z
+    .string()
+    .min(2, 'Nome da Arena deve ter pelo menos 2 caracteres'),
 })
 
 type ClientFormValues = z.infer<typeof clientSchema>
@@ -51,10 +51,10 @@ export function ClientFormDialog({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: '',
-      email: '',
+      city: '',
       phone: '',
-      club: '',
-      acquisitionDate: new Date().toISOString().split('T')[0],
+      arenaCode: '',
+      arenaName: '',
     },
   })
 
@@ -62,18 +62,18 @@ export function ClientFormDialog({
     if (client) {
       form.reset({
         name: client.name,
-        email: client.email,
+        city: client.city,
         phone: client.phone,
-        club: client.club,
-        acquisitionDate: client.acquisitionDate,
+        arenaCode: client.arenaCode,
+        arenaName: client.arenaName,
       })
     } else {
       form.reset({
         name: '',
-        email: '',
+        city: '',
         phone: '',
-        club: '',
-        acquisitionDate: new Date().toISOString().split('T')[0],
+        arenaCode: '',
+        arenaName: '',
       })
     }
   }, [client, form, open])
@@ -118,12 +118,12 @@ export function ClientFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Cidade/Estado</FormLabel>
                     <FormControl>
-                      <Input placeholder="joao@exemplo.com" {...field} />
+                      <Input placeholder="São Paulo/SP" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -146,12 +146,12 @@ export function ClientFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="club"
+                name="arenaCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Time/Clube</FormLabel>
+                    <FormLabel>Código da Arena</FormLabel>
                     <FormControl>
-                      <Input placeholder="Replay FC" {...field} />
+                      <Input placeholder="ARENA01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,12 +159,12 @@ export function ClientFormDialog({
               />
               <FormField
                 control={form.control}
-                name="acquisitionDate"
+                name="arenaName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Aquisição</FormLabel>
+                    <FormLabel>Nome da Arena</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input placeholder="Arena Central" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

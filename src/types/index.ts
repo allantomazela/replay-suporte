@@ -11,10 +11,10 @@ export interface User {
 export interface Client {
   id: string
   name: string
-  email: string
+  city: string // Cidade/Estado (previously email)
   phone: string
-  club: string // Time/Clube
-  acquisitionDate: string // ISO Date
+  arenaCode: string // Código da Arena (previously club)
+  arenaName: string // Nome da Arena (previously acquisitionDate)
   active: boolean
 }
 

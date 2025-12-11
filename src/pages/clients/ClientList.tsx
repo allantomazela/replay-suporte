@@ -40,8 +40,9 @@ export default function ClientList() {
   const filteredClients = clients.filter(
     (client) =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.club.toLowerCase().includes(searchTerm.toLowerCase()),
+      client.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.arenaCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.arenaName.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleEdit = (client: Client) => {
@@ -80,7 +81,7 @@ export default function ClientList() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar Cliente (nome, email, clube)..."
+            placeholder="Buscar Cliente (nome, cidade, arena)..."
             className="pl-9 bg-background"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -95,16 +96,16 @@ export default function ClientList() {
                   Nome
                 </TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-foreground">
-                  Email
+                  Cidade/Estado
                 </TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-foreground">
                   Telefone
                 </TableHead>
                 <TableHead className="font-semibold text-foreground">
-                  Time/Clube
+                  Código da Arena
                 </TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold text-foreground">
-                  Data de Aquisição
+                  Nome da Arena
                 </TableHead>
                 <TableHead className="text-right font-semibold text-foreground">
                   Ações
@@ -124,16 +125,16 @@ export default function ClientList() {
                     {client.name}
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {client.email}
+                    {client.city}
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">
                     {client.phone}
                   </TableCell>
                   <TableCell className="text-foreground">
-                    {client.club}
+                    {client.arenaCode}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">
-                    {new Date(client.acquisitionDate).toLocaleDateString()}
+                    {client.arenaName}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
