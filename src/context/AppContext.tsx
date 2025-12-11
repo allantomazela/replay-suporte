@@ -46,6 +46,7 @@ const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
   dashboard: { id: 'dashboard', visible: true, mobileVisible: true },
   clients: { id: 'clients', visible: true, mobileVisible: true },
   tickets: { id: 'tickets', visible: true, mobileVisible: true },
+  reports: { id: 'reports', visible: true, mobileVisible: true },
   profile: { id: 'profile', visible: true, mobileVisible: true },
 }
 
