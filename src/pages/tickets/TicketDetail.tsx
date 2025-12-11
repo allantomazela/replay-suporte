@@ -52,19 +52,9 @@ export default function TicketDetail() {
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground font-medium">Arena:</span>
-              <span>{client?.arenaName || 'N/A'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-medium">
-                Código da Arena:
+              <span>
+                {client?.arenaName || 'N/A'} - {client?.arenaCode || 'N/A'}
               </span>
-              <span>{client?.arenaCode || 'N/A'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-medium">
-                Cliente:
-              </span>
-              <span>{client?.name || ticket.clientName}</span>
             </div>
           </div>
         </div>
