@@ -84,8 +84,9 @@ export function TicketFormDialog({
         else schema = schema.optional()
       } else if (field.type === 'date') {
         schema = z.date()
-        if (field.required) schema = schema
-        else schema = schema.optional().nullable()
+        if (!field.required) {
+          schema = schema.optional().nullable()
+        }
       }
 
       customFieldsShape[field.id] = schema
