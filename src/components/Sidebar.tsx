@@ -1,43 +1,32 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  User,
-  LogOut,
-  Menu,
-} from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useState } from 'react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { NAV_CONFIG } from '@/lib/nav-config'
+import { useState } from 'react'
+import { MenuCustomizationDialog } from '@/components/settings/MenuCustomizationDialog'
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Clientes', path: '/clients', icon: Users },
-  { label: 'Atendimentos', path: '/tickets', icon: FileText },
-  { label: 'Perfil', path: '/profile', icon: User },
-]
+interface SidebarContentProps {
+  isMobile?: boolean
+  onCloseMobile?: () => void
+}
 
-export function Sidebar() {
-  const { user, logout } = useAppContext()
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+export function SidebarContent({
+  isMobile = false,
+  onCloseMobile,
+}: SidebarContentProps) {
+  const { user, logout, navOrder, navPreferences } = useAppContext()
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  return (
     <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       <div className="p-6 flex items-center justify-center lg:justify-start h-16">
         <div className="flex items-center gap-2">
@@ -56,8 +45,15 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {navOrder.map((id) => {
+          const item = NAV_CONFIG[id]
+          const prefs = navPreferences[id]
           const LinkIcon = item.icon
+
+          // Visibility Check
+          if (!prefs.visible) return null
+          if (isMobile && !prefs.mobileVisible) return null
+
           return (
             <TooltipProvider key={item.path}>
               <Tooltip delayDuration={0}>
@@ -72,7 +68,7 @@ export function Sidebar() {
                           : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                       )
                     }
-                    onClick={() => isMobile && setIsMobileOpen(false)}
+                    onClick={() => onCloseMobile?.()}
                   >
                     <LinkIcon className="h-5 w-5 shrink-0" />
                     <span
@@ -97,6 +93,39 @@ export function Sidebar() {
             </TooltipProvider>
           )
         })}
+
+        <TooltipProvider>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  'w-full justify-start mt-4',
+                  !isMobile && 'justify-center lg:justify-start',
+                )}
+                onClick={() => setIsSettingsOpen(true)}
+              >
+                <Settings className="h-5 w-5 shrink-0" />
+                <span
+                  className={cn(
+                    'font-medium whitespace-nowrap ml-3',
+                    !isMobile && 'hidden lg:block',
+                  )}
+                >
+                  Personalizar Menu
+                </span>
+                {!isMobile && (
+                  <span className="lg:hidden sr-only">Personalizar</span>
+                )}
+              </Button>
+            </TooltipTrigger>
+            {!isMobile && (
+              <TooltipContent side="right" className="lg:hidden">
+                Personalizar
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </nav>
 
       <div className="p-4 border-t border-sidebar-border mt-auto">
@@ -131,41 +160,19 @@ export function Sidebar() {
           <span className={cn(!isMobile && 'hidden lg:block')}>Sair</span>
         </Button>
       </div>
+
+      <MenuCustomizationDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
     </div>
   )
+}
 
+export function Sidebar() {
   return (
-    <>
-      {/* Tablet/Desktop Sidebar - Visible on sm (640px) and up */}
-      <aside className="hidden sm:flex flex-col w-20 lg:w-64 fixed inset-y-0 left-0 z-50 transition-all duration-300 bg-sidebar border-r border-sidebar-border">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Header & Drawer - Visible only on mobile (< 640px) */}
-      <div className="sm:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b z-50 flex items-center px-4 justify-between shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 bg-primary rounded flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">R</span>
-          </div>
-          <span className="font-bold text-xl">Replay</span>
-        </div>
-        <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="-mr-2">
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-80 border-r-0">
-            <SheetHeader className="sr-only">
-              <SheetTitle>Menu de Navegação</SheetTitle>
-            </SheetHeader>
-            <div className="h-full">
-              <SidebarContent isMobile={true} />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
+    <aside className="hidden sm:flex flex-col w-20 lg:w-64 fixed inset-y-0 left-0 z-50 transition-all duration-300 bg-sidebar border-r border-sidebar-border">
+      <SidebarContent />
+    </aside>
   )
 }

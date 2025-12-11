@@ -1,6 +1,19 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from 'react'
 import { Client, Ticket, User } from '@/types'
 import { MOCK_CLIENTS, MOCK_TICKETS, MOCK_USER } from '@/lib/mock-data'
+import { DEFAULT_NAV_ORDER, NavItemId } from '@/lib/nav-config'
+
+export interface NavPreference {
+  id: NavItemId
+  visible: boolean
+  mobileVisible: boolean
+}
 
 interface AppContextType {
   user: User | null
@@ -20,17 +33,50 @@ interface AppContextType {
   updateTicket: (id: string, data: Partial<Ticket>) => void
   getTicketById: (id: string) => Ticket | undefined
   getClientById: (id: string) => Client | undefined
+  // Navigation Preferences
+  navOrder: NavItemId[]
+  navPreferences: Record<NavItemId, NavPreference>
+  updateNavOrder: (order: NavItemId[]) => void
+  updateNavPreference: (id: NavItemId, pref: Partial<NavPreference>) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
+
+const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
+  dashboard: { id: 'dashboard', visible: true, mobileVisible: true },
+  clients: { id: 'clients', visible: true, mobileVisible: true },
+  tickets: { id: 'tickets', visible: true, mobileVisible: true },
+  profile: { id: 'profile', visible: true, mobileVisible: true },
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS)
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS)
 
+  // Navigation State
+  const [navOrder, setNavOrder] = useState<NavItemId[]>(() => {
+    const stored = localStorage.getItem('nav-order')
+    return stored ? JSON.parse(stored) : DEFAULT_NAV_ORDER
+  })
+
+  const [navPreferences, setNavPreferences] = useState<
+    Record<NavItemId, NavPreference>
+  >(() => {
+    const stored = localStorage.getItem('nav-preferences')
+    return stored ? JSON.parse(stored) : DEFAULT_PREFERENCES
+  })
+
+  // Persistence
+  useEffect(() => {
+    localStorage.setItem('nav-order', JSON.stringify(navOrder))
+  }, [navOrder])
+
+  useEffect(() => {
+    localStorage.setItem('nav-preferences', JSON.stringify(navPreferences))
+  }, [navPreferences])
+
   const login = (email: string) => {
-    // Simulate login
     setUser({ ...MOCK_USER, email })
   }
 
@@ -88,6 +134,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const updateNavOrder = (order: NavItemId[]) => {
+    setNavOrder(order)
+  }
+
+  const updateNavPreference = (id: NavItemId, pref: Partial<NavPreference>) => {
+    setNavPreferences((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], ...pref },
+    }))
+  }
+
   const getTicketById = (id: string) => tickets.find((t) => t.id === id)
   const getClientById = (id: string) => clients.find((c) => c.id === id)
 
@@ -106,6 +163,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateTicket,
         getTicketById,
         getClientById,
+        navOrder,
+        navPreferences,
+        updateNavOrder,
+        updateNavPreference,
       }}
     >
       {children}

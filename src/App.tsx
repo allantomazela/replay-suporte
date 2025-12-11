@@ -12,36 +12,39 @@ import TicketList from './pages/tickets/TicketList'
 import TicketDetail from './pages/tickets/TicketDetail'
 import Profile from './pages/Profile'
 import { AppProvider } from '@/context/AppContext'
+import { ThemeProvider } from '@/components/theme-provider'
 
 // App component with Provider wrapper
 const App = () => (
   <BrowserRouter
     future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
   >
-    <AppProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login />} />
+    <ThemeProvider defaultTheme="system" storageKey="replay-ui-theme">
+      <AppProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-          <Route element={<Layout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route element={<Layout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route path="/clients" element={<ClientList />} />
-            <Route path="/clients/:id" element={<ClientProfile />} />
+              <Route path="/clients" element={<ClientList />} />
+              <Route path="/clients/:id" element={<ClientProfile />} />
 
-            <Route path="/tickets" element={<TicketList />} />
-            <Route path="/tickets/:id" element={<TicketDetail />} />
+              <Route path="/tickets" element={<TicketList />} />
+              <Route path="/tickets/:id" element={<TicketDetail />} />
 
-            <Route path="/profile" element={<Profile />} />
-          </Route>
+              <Route path="/profile" element={<Profile />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </AppProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AppProvider>
+    </ThemeProvider>
   </BrowserRouter>
 )
 

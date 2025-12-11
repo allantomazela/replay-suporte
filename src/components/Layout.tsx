@@ -1,5 +1,6 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
+import { Header } from '@/components/Header'
 import { useAppContext } from '@/context/AppContext'
 
 export default function Layout() {
@@ -18,17 +19,12 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      {/* 
-        Adjusted padding for responsive sidebar:
-        - Mobile (< sm): No left padding (sidebar is drawer), pt-16 for header
-        - Tablet (sm - lg): pl-20 for collapsed sidebar (w-20), pt-0
-        - Desktop (lg+): pl-64 for expanded sidebar (w-64), pt-0
-      */}
-      <main className="flex-1 sm:pl-20 lg:pl-64 pt-16 sm:pt-0 min-h-screen transition-all duration-300">
-        <div className="container mx-auto p-4 md:p-8 max-w-7xl animate-fade-in">
+      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 sm:pl-20 lg:pl-64 w-full">
+        <Header />
+        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-fade-in">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
