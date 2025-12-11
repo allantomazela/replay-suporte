@@ -14,10 +14,11 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useState } from 'react'
 import { TicketFormDialog } from './TicketForm'
+import { Badge } from '@/components/ui/badge'
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>()
-  const { getTicketById } = useAppContext()
+  const { getTicketById, customFields } = useAppContext()
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   const ticket = getTicketById(id || '')
@@ -151,6 +152,30 @@ export default function TicketDetail() {
                   </p>
                 </div>
               </div>
+
+              {/* Custom Fields Display */}
+              {customFields.length > 0 && (
+                <>
+                  <div className="border-t my-4" />
+                  <h4 className="font-semibold mb-2">Informações Adicionais</h4>
+                  {customFields.map((field) => {
+                    const value = ticket.customData?.[field.id]
+                    if (!value) return null
+                    return (
+                      <div key={field.id} className="grid grid-cols-2 gap-2">
+                        <span className="text-muted-foreground">
+                          {field.label}:
+                        </span>
+                        <span className="font-medium text-right">
+                          {field.type === 'date'
+                            ? format(new Date(value), 'dd/MM/yyyy')
+                            : value}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

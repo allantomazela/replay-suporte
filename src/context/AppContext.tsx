@@ -5,8 +5,13 @@ import {
   ReactNode,
   useEffect,
 } from 'react'
-import { Client, Ticket, User } from '@/types'
-import { MOCK_CLIENTS, MOCK_TICKETS, MOCK_USER } from '@/lib/mock-data'
+import { Client, Ticket, User, CustomFieldDefinition } from '@/types'
+import {
+  MOCK_CLIENTS,
+  MOCK_TICKETS,
+  MOCK_USER,
+  MOCK_CUSTOM_FIELDS,
+} from '@/lib/mock-data'
 import { DEFAULT_NAV_ORDER, NavItemId } from '@/lib/nav-config'
 
 export interface NavPreference {
@@ -46,6 +51,8 @@ interface AppContextType {
   customIcons: Record<string, string>
   uploadCustomIcon: (id: string, url: string) => void
   resetCustomIcon: (id: string) => void
+  // Custom Fields
+  customFields: CustomFieldDefinition[]
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -72,6 +79,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS)
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS)
+  const [customFields, setCustomFields] =
+    useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
   // Navigation State
   const [navOrder, setNavOrder] = useState<NavItemId[]>(() => {
@@ -227,6 +236,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         customIcons,
         uploadCustomIcon,
         resetCustomIcon,
+        customFields,
       }}
     >
       {children}

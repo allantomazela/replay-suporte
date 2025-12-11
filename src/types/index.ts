@@ -11,10 +11,10 @@ export interface User {
 export interface Client {
   id: string
   name: string
-  city: string // Cidade/Estado (previously email)
+  city: string
   phone: string
-  arenaCode: string // Código da Arena (previously club)
-  arenaName: string // Nome da Arena (previously acquisitionDate)
+  arenaCode: string
+  arenaName: string
   active: boolean
 }
 
@@ -28,19 +28,31 @@ export interface Attachment {
   size: number
 }
 
+export type CustomFieldType = 'text' | 'number' | 'date' | 'select' | 'checkbox'
+
+export interface CustomFieldDefinition {
+  id: string
+  label: string
+  type: CustomFieldType
+  options?: string[]
+  required: boolean
+  placeholder?: string
+}
+
 export interface Ticket {
   id: string
   clientId: string
-  clientName: string // Denormalized for easier display
-  title: string // Derived from description or specific field
+  clientName: string
+  title: string
   description: string
   solutionSteps?: string
   status: TicketStatus
-  createdAt: string // ISO Date
-  updatedAt: string // ISO Date
+  createdAt: string
+  updatedAt: string
   responsibleId: string
   responsibleName: string
   attachments: Attachment[]
+  customData?: Record<string, any>
 }
 
 export interface AuthState {

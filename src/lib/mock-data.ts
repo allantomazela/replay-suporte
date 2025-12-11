@@ -1,4 +1,4 @@
-import { Client, Ticket, User } from '@/types'
+import { Client, Ticket, User, CustomFieldDefinition } from '@/types'
 import { subDays, subHours } from 'date-fns'
 
 export const MOCK_USER: User = {
@@ -48,6 +48,30 @@ export const MOCK_CLIENTS: Client[] = [
   },
 ]
 
+export const MOCK_CUSTOM_FIELDS: CustomFieldDefinition[] = [
+  {
+    id: 'priority',
+    label: 'Prioridade',
+    type: 'select',
+    options: ['Baixa', 'Média', 'Alta', 'Crítica'],
+    required: true,
+    placeholder: 'Selecione a prioridade',
+  },
+  {
+    id: 'equipmentType',
+    label: 'Tipo de Equipamento',
+    type: 'text',
+    required: false,
+    placeholder: 'Ex: Câmera, Servidor, Switch',
+  },
+  {
+    id: 'incidentDate',
+    label: 'Data do Incidente',
+    type: 'date',
+    required: false,
+  },
+]
+
 // Generate more realistic mock tickets
 const generateMockTickets = (): Ticket[] => {
   const tickets: Ticket[] = [
@@ -66,6 +90,10 @@ const generateMockTickets = (): Ticket[] => {
       responsibleId: 'u1',
       responsibleName: 'Ana Silva',
       attachments: [],
+      customData: {
+        priority: 'Alta',
+        equipmentType: 'Servidor',
+      },
     },
     {
       id: 't2',
@@ -80,6 +108,9 @@ const generateMockTickets = (): Ticket[] => {
       responsibleId: 'u1',
       responsibleName: 'Ana Silva',
       attachments: [],
+      customData: {
+        priority: 'Baixa',
+      },
     },
     {
       id: 't3',
@@ -93,6 +124,10 @@ const generateMockTickets = (): Ticket[] => {
       responsibleId: 'u1',
       responsibleName: 'Ana Silva',
       attachments: [],
+      customData: {
+        priority: 'Crítica',
+        equipmentType: 'Software',
+      },
     },
     {
       id: 't4',
@@ -106,6 +141,9 @@ const generateMockTickets = (): Ticket[] => {
       responsibleId: 'u1',
       responsibleName: 'Ana Silva',
       attachments: [],
+      customData: {
+        priority: 'Média',
+      },
     },
   ]
 
@@ -117,6 +155,7 @@ const generateMockTickets = (): Ticket[] => {
     { id: 'u3', name: 'Beatriz Lima' },
   ]
   const clients = MOCK_CLIENTS
+  const priorities = ['Baixa', 'Média', 'Alta', 'Crítica']
 
   for (let i = 5; i <= 35; i++) {
     const status = statuses[Math.floor(Math.random() * statuses.length)]
@@ -128,6 +167,8 @@ const generateMockTickets = (): Ticket[] => {
       status === 'Resolvido'
         ? subHours(createdAt, -Math.floor(Math.random() * 48) - 1)
         : createdAt
+
+    const priority = priorities[Math.floor(Math.random() * priorities.length)]
 
     tickets.push({
       id: `t${i}`,
@@ -141,6 +182,9 @@ const generateMockTickets = (): Ticket[] => {
       responsibleId: agent.id,
       responsibleName: agent.name,
       attachments: [],
+      customData: {
+        priority,
+      },
     })
   }
 
