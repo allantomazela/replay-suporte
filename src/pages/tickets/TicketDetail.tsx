@@ -14,11 +14,10 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useState } from 'react'
 import { TicketFormDialog } from './TicketForm'
-import { Badge } from '@/components/ui/badge'
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>()
-  const { getTicketById, customFields } = useAppContext()
+  const { getTicketById, getClientById, customFields } = useAppContext()
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   const ticket = getTicketById(id || '')
@@ -34,23 +33,42 @@ export default function TicketDetail() {
     )
   }
 
+  const client = getClientById(ticket.clientId)
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+      <div className="flex items-start gap-4">
+        <Button variant="ghost" size="icon" asChild className="shrink-0 mt-1">
           <Link to="/tickets">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
             Atendimento #{ticket.id}
             <TicketStatusBadge status={ticket.status} />
           </h1>
-          <p className="text-muted-foreground">{ticket.clientName}</p>
+          <div className="mt-3 space-y-1 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-medium">Arena:</span>
+              <span>{client?.arenaName || 'N/A'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-medium">
+                Código da Arena:
+              </span>
+              <span>{client?.arenaCode || 'N/A'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-medium">
+                Cliente:
+              </span>
+              <span>{client?.name || ticket.clientName}</span>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => setIsEditOpen(true)}>
+        <Button onClick={() => setIsEditOpen(true)} className="shrink-0">
           <Edit className="mr-2 h-4 w-4" /> Editar
         </Button>
       </div>
