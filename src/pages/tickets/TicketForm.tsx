@@ -152,7 +152,8 @@ export function TicketFormDialog({
                         )
                         .map((client) => (
                           <SelectItem key={client.id} value={client.id}>
-                            {client.name} - {client.club}
+                            {client.name} - {client.arenaName} -{' '}
+                            {client.arenaCode}
                           </SelectItem>
                         ))}
                     </SelectContent>
