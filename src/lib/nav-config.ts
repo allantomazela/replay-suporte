@@ -1,9 +1,9 @@
 import {
-  LayoutDashboard,
-  Users,
-  Ticket,
-  BarChart4,
-  User,
+  LayoutGrid,
+  UsersRound,
+  LifeBuoy,
+  ChartPie,
+  CircleUser,
   LucideIcon,
 } from 'lucide-react'
 
@@ -26,31 +26,31 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     id: 'dashboard',
     label: 'Dashboard',
     path: '/dashboard',
-    icon: LayoutDashboard,
+    icon: LayoutGrid,
   },
   clients: {
     id: 'clients',
     label: 'Clientes',
     path: '/clients',
-    icon: Users,
+    icon: UsersRound,
   },
   tickets: {
     id: 'tickets',
     label: 'Atendimentos',
     path: '/tickets',
-    icon: Ticket,
+    icon: LifeBuoy,
   },
   reports: {
     id: 'reports',
     label: 'Relatórios',
     path: '/reports',
-    icon: BarChart4,
+    icon: ChartPie,
   },
   profile: {
     id: 'profile',
     label: 'Perfil',
     path: '/profile',
-    icon: User,
+    icon: CircleUser,
   },
 }
 

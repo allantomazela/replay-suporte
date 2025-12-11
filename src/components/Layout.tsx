@@ -2,6 +2,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { useAppContext } from '@/context/AppContext'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 
 export default function Layout() {
   const { user } = useAppContext()
@@ -17,14 +18,16 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <SidebarProvider>
       <Sidebar />
-      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 sm:pl-20 lg:pl-64 w-full">
-        <Header />
-        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-fade-in">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+      <SidebarInset>
+        <div className="flex flex-col min-h-screen transition-all duration-300 w-full">
+          <Header />
+          <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-fade-in">
+            <Outlet />
+          </main>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
