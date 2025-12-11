@@ -11,6 +11,7 @@ import ClientProfile from './pages/clients/ClientProfile'
 import TicketList from './pages/tickets/TicketList'
 import TicketDetail from './pages/tickets/TicketDetail'
 import Reports from './pages/Reports'
+import PerformanceReports from './pages/PerformanceReports'
 import Profile from './pages/Profile'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -39,6 +40,10 @@ const App = () => (
               <Route path="/tickets/:id" element={<TicketDetail />} />
 
               <Route path="/reports" element={<Reports />} />
+              <Route
+                path="/reports/performance"
+                element={<PerformanceReports />}
+              />
 
               <Route path="/profile" element={<Profile />} />
             </Route>

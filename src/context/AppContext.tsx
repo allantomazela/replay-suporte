@@ -15,6 +15,8 @@ export interface NavPreference {
   mobileVisible: boolean
 }
 
+export type IconSetType = 'default' | 'bold' | 'minimal'
+
 interface AppContextType {
   user: User | null
   clients: Client[]
@@ -38,6 +40,12 @@ interface AppContextType {
   navPreferences: Record<NavItemId, NavPreference>
   updateNavOrder: (order: NavItemId[]) => void
   updateNavPreference: (id: NavItemId, pref: Partial<NavPreference>) => void
+  // Icon Customization
+  iconSet: IconSetType
+  updateIconSet: (set: IconSetType) => void
+  customIcons: Record<string, string>
+  uploadCustomIcon: (id: string, url: string) => void
+  resetCustomIcon: (id: string) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -47,6 +55,16 @@ const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
   clients: { id: 'clients', visible: true, mobileVisible: true },
   tickets: { id: 'tickets', visible: true, mobileVisible: true },
   reports: { id: 'reports', visible: true, mobileVisible: true },
+  'reports-overview': {
+    id: 'reports-overview',
+    visible: true,
+    mobileVisible: true,
+  },
+  'reports-performance': {
+    id: 'reports-performance',
+    visible: true,
+    mobileVisible: true,
+  },
   profile: { id: 'profile', visible: true, mobileVisible: true },
 }
 
@@ -65,7 +83,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     Record<NavItemId, NavPreference>
   >(() => {
     const stored = localStorage.getItem('nav-preferences')
-    return stored ? JSON.parse(stored) : DEFAULT_PREFERENCES
+    const parsed = stored ? JSON.parse(stored) : {}
+    // Merge with defaults to ensure new keys exist
+    return { ...DEFAULT_PREFERENCES, ...parsed }
+  })
+
+  // Icon State
+  const [iconSet, setIconSet] = useState<IconSetType>(() => {
+    return (localStorage.getItem('icon-set') as IconSetType) || 'default'
+  })
+
+  const [customIcons, setCustomIcons] = useState<Record<string, string>>(() => {
+    const stored = localStorage.getItem('custom-icons')
+    return stored ? JSON.parse(stored) : {}
   })
 
   // Persistence
@@ -76,6 +106,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('nav-preferences', JSON.stringify(navPreferences))
   }, [navPreferences])
+
+  useEffect(() => {
+    localStorage.setItem('icon-set', iconSet)
+  }, [iconSet])
+
+  useEffect(() => {
+    localStorage.setItem('custom-icons', JSON.stringify(customIcons))
+  }, [customIcons])
 
   const login = (email: string) => {
     setUser({ ...MOCK_USER, email })
@@ -146,6 +184,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }))
   }
 
+  const updateIconSet = (set: IconSetType) => {
+    setIconSet(set)
+  }
+
+  const uploadCustomIcon = (id: string, url: string) => {
+    setCustomIcons((prev) => ({ ...prev, [id]: url }))
+  }
+
+  const resetCustomIcon = (id: string) => {
+    setCustomIcons((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }
+
   const getTicketById = (id: string) => tickets.find((t) => t.id === id)
   const getClientById = (id: string) => clients.find((c) => c.id === id)
 
@@ -168,6 +222,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         navPreferences,
         updateNavOrder,
         updateNavPreference,
+        iconSet,
+        updateIconSet,
+        customIcons,
+        uploadCustomIcon,
+        resetCustomIcon,
       }}
     >
       {children}

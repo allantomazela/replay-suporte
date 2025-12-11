@@ -5,6 +5,8 @@ import {
   ChartPie,
   CircleUser,
   LucideIcon,
+  BarChart3,
+  LineChart,
 } from 'lucide-react'
 
 export type NavItemId =
@@ -13,12 +15,15 @@ export type NavItemId =
   | 'tickets'
   | 'profile'
   | 'reports'
+  | 'reports-overview'
+  | 'reports-performance'
 
 export interface NavItemConfig {
   id: NavItemId
   label: string
   path: string
   icon: LucideIcon
+  children?: NavItemId[]
 }
 
 export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
@@ -45,6 +50,19 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     label: 'Relatórios',
     path: '/reports',
     icon: ChartPie,
+    children: ['reports-overview', 'reports-performance'],
+  },
+  'reports-overview': {
+    id: 'reports-overview',
+    label: 'Visão Geral',
+    path: '/reports',
+    icon: BarChart3,
+  },
+  'reports-performance': {
+    id: 'reports-performance',
+    label: 'Performance',
+    path: '/reports/performance',
+    icon: LineChart,
   },
   profile: {
     id: 'profile',
