@@ -70,10 +70,10 @@ export function SidebarContent({
                     }
                     onClick={() => onCloseMobile?.()}
                   >
-                    <LinkIcon className="h-5 w-5 shrink-0" />
+                    <LinkIcon className="h-5 w-5 shrink-0" strokeWidth={1.5} />
                     <span
                       className={cn(
-                        'font-medium whitespace-nowrap',
+                        'font-medium whitespace-nowrap leading-none',
                         !isMobile && 'hidden lg:block',
                       )}
                     >
@@ -100,15 +100,15 @@ export function SidebarContent({
               <Button
                 variant="ghost"
                 className={cn(
-                  'w-full justify-start mt-4',
+                  'w-full justify-start mt-4 px-4 py-3 h-auto',
                   !isMobile && 'justify-center lg:justify-start',
                 )}
                 onClick={() => setIsSettingsOpen(true)}
               >
-                <Settings className="h-5 w-5 shrink-0" />
+                <Settings className="h-5 w-5 shrink-0" strokeWidth={1.5} />
                 <span
                   className={cn(
-                    'font-medium whitespace-nowrap ml-3',
+                    'font-medium whitespace-nowrap ml-3 leading-none',
                     !isMobile && 'hidden lg:block',
                   )}
                 >
@@ -151,12 +151,12 @@ export function SidebarContent({
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10',
+            'w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 px-2',
             !isMobile && 'justify-center lg:justify-start',
           )}
           onClick={logout}
         >
-          <LogOut className="h-5 w-5 lg:mr-2 shrink-0" />
+          <LogOut className="h-5 w-5 lg:mr-2 shrink-0" strokeWidth={1.5} />
           <span className={cn(!isMobile && 'hidden lg:block')}>Sair</span>
         </Button>
       </div>

@@ -66,7 +66,7 @@ export default function TicketList() {
         </Button>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border space-y-4">
+      <div className="bg-card text-card-foreground p-4 rounded-lg shadow-sm border space-y-4">
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative md:col-span-2">

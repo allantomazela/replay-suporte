@@ -1,9 +1,9 @@
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  User,
-  BarChart3,
+  LayoutGrid,
+  UsersRound,
+  ClipboardList,
+  UserCircle,
+  PieChart,
   LucideIcon,
 } from 'lucide-react'
 
@@ -26,22 +26,32 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     id: 'dashboard',
     label: 'Dashboard',
     path: '/dashboard',
-    icon: LayoutDashboard,
+    icon: LayoutGrid,
   },
-  clients: { id: 'clients', label: 'Clientes', path: '/clients', icon: Users },
+  clients: {
+    id: 'clients',
+    label: 'Clientes',
+    path: '/clients',
+    icon: UsersRound,
+  },
   tickets: {
     id: 'tickets',
     label: 'Atendimentos',
     path: '/tickets',
-    icon: FileText,
+    icon: ClipboardList,
   },
   reports: {
     id: 'reports',
     label: 'Relatórios',
     path: '/reports',
-    icon: BarChart3,
+    icon: PieChart,
   },
-  profile: { id: 'profile', label: 'Perfil', path: '/profile', icon: User },
+  profile: {
+    id: 'profile',
+    label: 'Perfil',
+    path: '/profile',
+    icon: UserCircle,
+  },
 }
 
 export const DEFAULT_NAV_ORDER: NavItemId[] = [
