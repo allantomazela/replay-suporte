@@ -15,6 +15,10 @@ import {
   Edit,
   Trash2,
   History,
+  Bell,
+  BellOff,
+  Globe,
+  Lock,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -36,8 +40,16 @@ import { RelatedArticles } from '@/components/knowledge-base/RelatedArticles'
 export default function KnowledgeBaseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getArticleById, deleteArticle, getKBPermissions, knowledgeArticles } =
-    useAppContext()
+  const {
+    getArticleById,
+    deleteArticle,
+    getKBPermissions,
+    knowledgeArticles,
+    subscribe,
+    unsubscribe,
+    subscriptions,
+    user,
+  } = useAppContext()
   const { toast } = useToast()
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -45,6 +57,15 @@ export default function KnowledgeBaseDetail() {
 
   const article = id ? getArticleById(id) : undefined
   const permissions = getKBPermissions(article?.author)
+
+  // Subscription State
+  const subscription = subscriptions.find(
+    (s) =>
+      s.userId === user?.id &&
+      s.type === 'article' &&
+      s.targetId === article?.id,
+  )
+  const isSubscribed = !!subscription
 
   if (!article) {
     return (
@@ -73,6 +94,22 @@ export default function KnowledgeBaseDetail() {
         description: 'O artigo foi removido com sucesso.',
       })
       navigate('/knowledge-base')
+    }
+  }
+
+  const toggleSubscription = () => {
+    if (isSubscribed && subscription) {
+      unsubscribe(subscription.id)
+      toast({
+        title: 'Inscrição Cancelada',
+        description: 'Você não receberá mais notificações deste artigo.',
+      })
+    } else {
+      subscribe('article', article.id, article.title)
+      toast({
+        title: 'Inscrito com Sucesso',
+        description: 'Você será notificado quando este artigo for atualizado.',
+      })
     }
   }
 
@@ -127,6 +164,21 @@ export default function KnowledgeBaseDetail() {
               #{tag}
             </Badge>
           ))}
+          {article.isPublic ? (
+            <Badge
+              variant="outline"
+              className="text-xs border-green-500 text-green-600 flex gap-1"
+            >
+              <Globe className="h-3 w-3" /> Público
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="text-xs border-amber-500 text-amber-600 flex gap-1"
+            >
+              <Lock className="h-3 w-3" /> Privado
+            </Badge>
+          )}
         </div>
 
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
@@ -190,6 +242,21 @@ export default function KnowledgeBaseDetail() {
               <h3 className="font-semibold text-sm uppercase text-muted-foreground tracking-wider">
                 Ações
               </h3>
+              <Button
+                variant={isSubscribed ? 'secondary' : 'default'}
+                className="w-full justify-start"
+                onClick={toggleSubscription}
+              >
+                {isSubscribed ? (
+                  <>
+                    <BellOff className="mr-2 h-4 w-4" /> Cancelar Inscrição
+                  </>
+                ) : (
+                  <>
+                    <Bell className="mr-2 h-4 w-4" /> Receber Atualizações
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 className="w-full justify-start"

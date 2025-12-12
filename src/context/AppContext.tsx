@@ -14,6 +14,8 @@ import {
   KnowledgeArticle,
   KnowledgeCategory,
   KnowledgeArticleVersion,
+  KBSubscription,
+  AppNotification,
 } from '@/types'
 import {
   MOCK_CLIENTS,
@@ -78,6 +80,17 @@ interface AppContextType {
   updateCategory: (id: string, data: Partial<KnowledgeCategory>) => void
   deleteCategory: (id: string) => void
   getKBPermissions: (authorId?: string) => KBPermissions
+  // Subscriptions & Notifications
+  subscriptions: KBSubscription[]
+  notifications: AppNotification[]
+  subscribe: (
+    type: 'article' | 'category',
+    targetId: string,
+    targetName: string,
+  ) => void
+  unsubscribe: (id: string) => void
+  markNotificationAsRead: (id: string) => void
+  clearNotifications: () => void
   // Navigation Preferences
   navOrder: NavItemId[]
   navPreferences: Record<NavItemId, NavPreference>
@@ -131,7 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customFields, setCustomFields] =
     useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
-  // Knowledge Base State - Persisted in localStorage to simulate DB
+  // Knowledge Base State
   const [knowledgeArticles, setKnowledgeArticles] = useState<
     KnowledgeArticle[]
   >(() => {
@@ -143,6 +156,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   >(() => {
     const stored = localStorage.getItem('kb-categories')
     return stored ? JSON.parse(stored) : MOCK_KNOWLEDGE_CATEGORIES
+  })
+
+  // Subscriptions & Notifications State
+  const [subscriptions, setSubscriptions] = useState<KBSubscription[]>(() => {
+    const stored = localStorage.getItem('kb-subscriptions')
+    return stored ? JSON.parse(stored) : []
+  })
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    const stored = localStorage.getItem('app-notifications')
+    return stored ? JSON.parse(stored) : []
   })
 
   // Navigation State
@@ -191,7 +214,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   >(() => {
     const stored = localStorage.getItem('notification-settings')
     if (stored) return JSON.parse(stored)
-
     return MOCK_CLIENTS.map((client) => ({
       arenaId: client.id,
       events: {
@@ -214,6 +236,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('kb-categories', JSON.stringify(knowledgeCategories))
   }, [knowledgeCategories])
+
+  useEffect(() => {
+    localStorage.setItem('kb-subscriptions', JSON.stringify(subscriptions))
+  }, [subscriptions])
+
+  useEffect(() => {
+    localStorage.setItem('app-notifications', JSON.stringify(notifications))
+  }, [notifications])
 
   useEffect(() => {
     localStorage.setItem('nav-order', JSON.stringify(navOrder))
@@ -247,6 +277,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  // Helper to trigger notifications
+  const notifySubscribers = (article: KnowledgeArticle) => {
+    // Find matching subscriptions (for all users - simplified for this mock, assuming single user context but checking "userId" theoretically)
+    // In a real app, this runs on backend. Here we simulate notifications for the CURRENT user if they are subscribed.
+    if (!user) return
+
+    const relevantSubs = subscriptions.filter(
+      (sub) =>
+        (sub.type === 'article' && sub.targetId === article.id) ||
+        (sub.type === 'category' && sub.targetId === article.categoryId),
+    )
+
+    if (relevantSubs.length > 0) {
+      const newNotification: AppNotification = {
+        id: `notif-${Date.now()}`,
+        userId: user.id,
+        title: 'Artigo Atualizado',
+        message: `O artigo "${article.title}" foi atualizado.`,
+        link: `/knowledge-base/articles/${article.id}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }
+      setNotifications((prev) => [newNotification, ...prev])
+    }
+  }
+
   // Client CRUD
   const addClient = (data: Omit<Client, 'id' | 'active'>) => {
     const newClient: Client = {
@@ -255,21 +311,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active: true,
     }
     setClients((prev) => [...prev, newClient])
-    setNotificationSettings((prev) => [
-      ...prev,
-      {
-        arenaId: newClient.id,
-        events: {
-          statusChange: true,
-          newComment: true,
-          assignmentChange: false,
-        },
-        channels: {
-          inApp: true,
-          email: false,
-        },
-      },
-    ])
   }
 
   const updateClient = (id: string, data: Partial<Client>) => {
@@ -314,7 +355,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  // Permission Logic
+  // KB Permissions
   const getKBPermissions = (authorId?: string): KBPermissions => {
     if (!user) {
       return {
@@ -327,10 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         canRestore: false,
       }
     }
-
     const { role, name } = user
-
-    // Admin
     if (role === 'admin') {
       return {
         canView: true,
@@ -342,8 +380,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         canRestore: true,
       }
     }
-
-    // Editor (Coordinator)
     if (role === 'coordinator') {
       return {
         canView: true,
@@ -355,26 +391,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         canRestore: true,
       }
     }
-
-    // Creator (Agent)
     if (role === 'agent') {
-      // Creator can create, view, but only edit/delete/manage their own (if defined, but spec says "not edit/delete articles created by others")
-      // We assume authorId check is done on component level for 'edit' if permission says 'canEdit' is conditional or we handle logic here.
-      // However, the spec says "Creator ... not edit or delete articles created by others".
-      // This implies they CAN edit their own.
-      const isAuthor = authorId === name // Using name as author in MOCK_DATA
+      const isAuthor = authorId === name
       return {
         canView: true,
         canCreate: true,
         canEdit: !!isAuthor,
-        canDelete: false, // Spec implies they can't delete? "not edit or delete articles created by others". Usually means can delete own. But let's follow stricter "not delete" generally or just own. Let's say false for simplicity unless own.
+        canDelete: false,
         canManageCategories: false,
         canViewHistory: !!isAuthor,
         canRestore: !!isAuthor,
       }
     }
-
-    // Viewer (Client)
     return {
       canView: true,
       canCreate: false,
@@ -386,7 +414,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Knowledge Base CRUD
+  // KB CRUD
   const addArticle = (
     article: Omit<
       KnowledgeArticle,
@@ -409,26 +437,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setKnowledgeArticles((prev) =>
       prev.map((a) => {
         if (a.id === id) {
-          // Create Version Snapshot
-          const currentVersion: KnowledgeArticleVersion = {
-            id: `v${Date.now()}`,
-            articleId: a.id,
-            title: a.title,
-            content: a.content,
-            excerpt: a.excerpt,
-            updatedAt: a.updatedAt,
-            updatedBy: a.author, // In a real app, this would be the last modifier. Mocks use author.
-            versionNumber: (a.versions?.length || 0) + 1,
-          }
-
-          const updatedVersions = [...(a.versions || []), currentVersion]
-
-          return {
+          const updatedArticle = {
             ...a,
             ...data,
             updatedAt: new Date().toISOString(),
-            versions: updatedVersions,
+            versions: [
+              ...(a.versions || []),
+              {
+                id: `v${Date.now()}`,
+                articleId: a.id,
+                title: a.title,
+                content: a.content,
+                excerpt: a.excerpt,
+                updatedAt: a.updatedAt,
+                updatedBy: a.author,
+                versionNumber: (a.versions?.length || 0) + 1,
+              },
+            ],
           }
+          // Notify after update
+          notifySubscribers(updatedArticle)
+          return updatedArticle
         }
         return a
       }),
@@ -444,7 +473,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (a.id === articleId && a.versions) {
           const versionToRestore = a.versions.find((v) => v.id === versionId)
           if (versionToRestore) {
-            // Snapshot current state before restoring
             const currentSnapshot: KnowledgeArticleVersion = {
               id: `v${Date.now()}`,
               articleId: a.id,
@@ -455,8 +483,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               updatedBy: user?.name || 'Sistema',
               versionNumber: a.versions.length + 1,
             }
-
-            return {
+            const restoredArticle = {
               ...a,
               title: versionToRestore.title,
               content: versionToRestore.content,
@@ -464,6 +491,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               updatedAt: new Date().toISOString(),
               versions: [...a.versions, currentSnapshot],
             }
+            notifySubscribers(restoredArticle)
+            return restoredArticle
           }
         }
         return a
@@ -487,7 +516,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setKnowledgeCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
     )
-    // Also update categoryName in articles if name changed
     if (data.name) {
       setKnowledgeArticles((prev) =>
         prev.map((a) =>
@@ -501,7 +529,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setKnowledgeCategories((prev) => prev.filter((c) => c.id !== id))
   }
 
-  // Navigation & Settings
+  // Subscription Actions
+  const subscribe = (
+    type: 'article' | 'category',
+    targetId: string,
+    targetName: string,
+  ) => {
+    if (!user) return
+    const newSub: KBSubscription = {
+      id: `sub-${Date.now()}`,
+      userId: user.id,
+      type,
+      targetId,
+      targetName,
+    }
+    setSubscriptions((prev) => [...prev, newSub])
+  }
+
+  const unsubscribe = (id: string) => {
+    setSubscriptions((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    )
+  }
+
+  const clearNotifications = () => {
+    setNotifications([])
+  }
+
+  // Other Actions
   const updateNavOrder = (order: NavItemId[]) => {
     setNavOrder(order)
   }
@@ -600,6 +659,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteCategory,
         restoreArticleVersion,
         getKBPermissions,
+        // Subscriptions & Notifications
+        subscriptions,
+        notifications,
+        subscribe,
+        unsubscribe,
+        markNotificationAsRead,
+        clearNotifications,
         // Other Exports
         navOrder,
         navPreferences,

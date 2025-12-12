@@ -17,6 +17,8 @@ import {
   Plus,
   Settings,
   Check,
+  Bell,
+  BellOff,
 } from 'lucide-react'
 import { ArticleCard } from '@/components/knowledge-base/ArticleCard'
 import { Badge } from '@/components/ui/badge'
@@ -37,11 +39,20 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function KnowledgeBaseList() {
-  const { knowledgeArticles, knowledgeCategories, getKBPermissions } =
-    useAppContext()
+  const {
+    knowledgeArticles,
+    knowledgeCategories,
+    getKBPermissions,
+    subscribe,
+    unsubscribe,
+    subscriptions,
+    user,
+  } = useAppContext()
   const permissions = getKBPermissions()
+  const { toast } = useToast()
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('')
@@ -116,6 +127,37 @@ export default function KnowledgeBaseList() {
   }
 
   const hasActiveFilters = searchTerm !== '' || selectedCategories.length > 0
+
+  // Category Subscription Logic
+  const getCategorySubscription = (categoryId: string) =>
+    subscriptions.find(
+      (s) =>
+        s.userId === user?.id &&
+        s.type === 'category' &&
+        s.targetId === categoryId,
+    )
+
+  const toggleCategorySubscription = (
+    e: React.MouseEvent,
+    categoryId: string,
+    categoryName: string,
+  ) => {
+    e.stopPropagation()
+    const sub = getCategorySubscription(categoryId)
+    if (sub) {
+      unsubscribe(sub.id)
+      toast({
+        title: 'Inscrição Removida',
+        description: `Você não receberá mais notificações da categoria ${categoryName}.`,
+      })
+    } else {
+      subscribe('category', categoryId, categoryName)
+      toast({
+        title: 'Inscrito na Categoria',
+        description: `Você será notificado sobre atualizações em ${categoryName}.`,
+      })
+    }
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -258,11 +300,34 @@ export default function KnowledgeBaseList() {
               </span>
               {selectedCategories.map((catId) => {
                 const cat = knowledgeCategories.find((c) => c.id === catId)
+                const isSubscribed = !!getCategorySubscription(catId)
                 return (
-                  <Badge key={catId} variant="secondary" className="text-xs">
+                  <Badge
+                    key={catId}
+                    variant="secondary"
+                    className="text-xs gap-1 pr-1"
+                  >
                     {cat?.name}
+                    <div
+                      className={cn(
+                        'cursor-pointer hover:bg-muted p-0.5 rounded-full',
+                        isSubscribed && 'text-primary',
+                      )}
+                      onClick={(e) =>
+                        toggleCategorySubscription(e, catId, cat?.name || '')
+                      }
+                      title={
+                        isSubscribed ? 'Cancelar inscrição' : 'Receber alertas'
+                      }
+                    >
+                      {isSubscribed ? (
+                        <Bell className="h-3 w-3 fill-current" />
+                      ) : (
+                        <BellOff className="h-3 w-3" />
+                      )}
+                    </div>
                     <X
-                      className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
+                      className="h-3 w-3 cursor-pointer hover:text-destructive ml-1"
                       onClick={() => toggleCategory(catId)}
                     />
                   </Badge>

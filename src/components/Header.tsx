@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/tooltip'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
+import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 export function Header() {
   const [isCommandOpen, setIsCommandOpen] = useState(false)
@@ -58,6 +59,7 @@ export function Header() {
           </Tooltip>
         </TooltipProvider>
 
+        <NotificationCenter />
         <ModeToggle />
       </div>
 

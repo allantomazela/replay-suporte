@@ -108,4 +108,25 @@ export interface KnowledgeArticle {
   views: number
   helpfulCount: number
   versions?: KnowledgeArticleVersion[]
+  isPublic: boolean
+}
+
+export type SubscriptionType = 'article' | 'category'
+
+export interface KBSubscription {
+  id: string
+  userId: string
+  type: SubscriptionType
+  targetId: string // articleId or categoryId
+  targetName: string
+}
+
+export interface AppNotification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  link?: string
+  read: boolean
+  createdAt: string
 }

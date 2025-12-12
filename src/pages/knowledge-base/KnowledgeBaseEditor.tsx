@@ -23,14 +23,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form'
 import { Card, CardContent } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 
 const articleSchema = z.object({
   title: z.string().min(5, 'O título deve ter pelo menos 5 caracteres'),
   categoryId: z.string().min(1, 'Selecione uma categoria'),
   content: z.string().min(20, 'O conteúdo deve ter pelo menos 20 caracteres'),
-  tags: z.string().optional(), // Comma separated
+  tags: z.string().optional(),
+  isPublic: z.boolean().default(false),
 })
 
 type ArticleFormValues = z.infer<typeof articleSchema>
@@ -81,6 +84,7 @@ export default function KnowledgeBaseEditor() {
       categoryId: '',
       content: '',
       tags: '',
+      isPublic: false,
     },
   })
 
@@ -91,6 +95,7 @@ export default function KnowledgeBaseEditor() {
         categoryId: article.categoryId,
         content: article.content,
         tags: article.tags.join(', '),
+        isPublic: article.isPublic,
       })
     } else if (isEditing && !article) {
       toast({
@@ -104,8 +109,6 @@ export default function KnowledgeBaseEditor() {
 
   const onSubmit = async (values: ArticleFormValues) => {
     setIsSubmitting(true)
-
-    // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 600))
 
     try {
@@ -119,7 +122,6 @@ export default function KnowledgeBaseEditor() {
             .filter(Boolean)
         : []
 
-      // Generate excerpt from content (strip HTML)
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = values.content
       const plainText = tempDiv.textContent || tempDiv.innerText || ''
@@ -134,6 +136,7 @@ export default function KnowledgeBaseEditor() {
           content: values.content,
           excerpt,
           tags: tagsArray,
+          isPublic: values.isPublic,
         })
         toast({
           title: 'Artigo Atualizado',
@@ -149,7 +152,7 @@ export default function KnowledgeBaseEditor() {
           excerpt,
           tags: tagsArray,
           author: user?.name || 'Sistema',
-          tags: tagsArray,
+          isPublic: values.isPublic,
         })
         toast({
           title: 'Artigo Criado',
@@ -264,6 +267,30 @@ export default function KnowledgeBaseEditor() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Artigo Público
+                      </FormLabel>
+                      <FormDescription>
+                        Permitir que clientes vejam este artigo no portal de
+                        ajuda sem login.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

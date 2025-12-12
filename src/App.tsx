@@ -18,6 +18,9 @@ import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
 import KnowledgeBaseEditor from './pages/knowledge-base/KnowledgeBaseEditor'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
+import PortalLayout from './pages/portal/PortalLayout'
+import PortalHome from './pages/portal/PortalHome'
+import PortalArticle from './pages/portal/PortalArticle'
 
 // App component with Provider wrapper
 const App = () => (
@@ -32,6 +35,13 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
 
+            {/* Portal Routes (Public) */}
+            <Route path="/portal" element={<PortalLayout />}>
+              <Route index element={<PortalHome />} />
+              <Route path="article/:id" element={<PortalArticle />} />
+            </Route>
+
+            {/* App Routes (Private) */}
             <Route element={<Layout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />

@@ -6,11 +6,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
-import { Bell, Mail, MessageSquare } from 'lucide-react'
+import {
+  Bell,
+  Mail,
+  MessageSquare,
+  BookOpen,
+  Trash2,
+  FileText,
+  Tag,
+} from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export default function Profile() {
-  const { user, clients, notificationSettings, updateNotificationSetting } =
-    useAppContext()
+  const {
+    user,
+    clients,
+    notificationSettings,
+    updateNotificationSetting,
+    subscriptions,
+    unsubscribe,
+  } = useAppContext()
 
   if (!user) return null
 
@@ -21,9 +36,12 @@ export default function Profile() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
+          <TabsTrigger value="kb-subscriptions">
+            Assinaturas da Base
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -191,6 +209,59 @@ export default function Profile() {
               })}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="kb-subscriptions" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" /> Assinaturas da Base de
+                Conhecimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {subscriptions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Você não está inscrito em nenhum artigo ou categoria.</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="space-y-4">
+                    {subscriptions.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between p-4 border rounded-lg bg-card"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-muted p-2 rounded-full">
+                            {sub.type === 'article' ? (
+                              <FileText className="h-4 w-4 text-blue-500" />
+                            ) : (
+                              <Tag className="h-4 w-4 text-green-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{sub.targetName}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {sub.type === 'article' ? 'Artigo' : 'Categoria'}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => unsubscribe(sub.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Cancelar
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
