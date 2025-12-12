@@ -192,7 +192,7 @@ export default function Reports() {
 
     try {
       // Small delay to ensure render updates if any
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       await generateReportPDF(
         'report-document-container',
