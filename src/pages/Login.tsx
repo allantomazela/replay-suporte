@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -37,11 +38,39 @@ export default function Login() {
       return
     }
 
+    // Use AppContext login (which might be mock or supabase depending on config)
     setTimeout(() => {
       login(email)
       setIsLoading(false)
       navigate('/dashboard')
     }, 1500)
+  }
+
+  const handleGoogleLogin = async () => {
+    if (!supabase) {
+      toast({
+        title: 'Configuração Necessária',
+        description: 'Integre com o Supabase para habilitar o login Google.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      })
+      if (error) throw error
+    } catch (error: any) {
+      toast({
+        title: 'Erro no Login',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -114,12 +143,7 @@ export default function Login() {
             variant="outline"
             className="w-full"
             type="button"
-            onClick={() =>
-              toast({
-                title: 'Funcionalidade em desenvolvimento',
-                description: 'Login com Google em breve.',
-              })
-            }
+            onClick={handleGoogleLogin}
           >
             <svg
               className="mr-2 h-4 w-4"
