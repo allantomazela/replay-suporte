@@ -50,7 +50,6 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     label: 'Relatórios',
     path: '/reports',
     icon: ChartPie,
-    children: ['reports-overview', 'reports-performance'],
   },
   'reports-overview': {
     id: 'reports-overview',
