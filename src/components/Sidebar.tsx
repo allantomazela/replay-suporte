@@ -75,6 +75,8 @@ export function Sidebar() {
     item: NavItemConfig
     isSub?: boolean
   }) => {
+    if (!item) return null
+
     const prefs = navPreferences[item.id]
     if (!prefs?.visible) return null
     if (isMobile && !prefs?.mobileVisible) return null

@@ -94,10 +94,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customFields, setCustomFields] =
     useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
-  // Navigation State
+  // Navigation State with robust initialization to ensure new menu items appear
   const [navOrder, setNavOrder] = useState<NavItemId[]>(() => {
     const stored = localStorage.getItem('nav-order')
-    return stored ? JSON.parse(stored) : DEFAULT_NAV_ORDER
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          // Check for any missing default items (like 'reports') and append them
+          const missingItems = DEFAULT_NAV_ORDER.filter(
+            (id) => !parsed.includes(id),
+          )
+          if (missingItems.length > 0) {
+            return [...parsed, ...missingItems]
+          }
+          return parsed
+        }
+      } catch (e) {
+        console.error('Failed to parse nav-order from localStorage', e)
+      }
+    }
+    return DEFAULT_NAV_ORDER
   })
 
   const [navPreferences, setNavPreferences] = useState<
