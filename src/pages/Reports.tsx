@@ -7,6 +7,8 @@ import { AgentPerformanceChart } from '@/components/reports/charts/AgentPerforma
 import { StatusDistributionChart } from '@/components/reports/charts/StatusDistributionChart'
 import { TopIssuesChart } from '@/components/reports/charts/TopIssuesChart'
 import { ArenaDistributionChart } from '@/components/reports/charts/ArenaDistributionChart'
+import { DetailedTicketsTable } from '@/components/reports/DetailedTicketsTable'
+import { ReportDocument } from '@/components/reports/ReportDocument'
 import { DateRange } from 'react-day-picker'
 import { subDays, isWithinInterval, format, differenceInHours } from 'date-fns'
 import { Clock, CheckCircle2, TicketIcon, Timer } from 'lucide-react'
@@ -180,10 +182,13 @@ export default function Reports() {
   // Exports
   const handleExportPDF = () => {
     toast({
-      title: 'Exportando PDF',
-      description: 'A geração do relatório PDF foi iniciada (Simulação).',
+      title: 'Gerando PDF',
+      description: 'Preparando documento para impressão...',
     })
-    setTimeout(() => window.print(), 1000)
+    // Delay slightly to ensure toast renders and state stabilizes if needed
+    setTimeout(() => {
+      window.print()
+    }, 500)
   }
 
   const handleExportCSV = () => {
@@ -232,71 +237,91 @@ export default function Reports() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-bold">Relatórios de Performance</h1>
+    <>
+      <div className="space-y-8 animate-fade-in print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <h1 className="text-3xl font-bold">Relatórios de Performance</h1>
+        </div>
+
+        <ReportFilters
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          clientFilter={clientFilter}
+          setClientFilter={setClientFilter}
+          agentFilter={agentFilter}
+          setAgentFilter={setAgentFilter}
+          problemTypeFilter={problemTypeFilter}
+          setProblemTypeFilter={setProblemTypeFilter}
+          onExportPDF={handleExportPDF}
+          onExportCSV={handleExportCSV}
+        />
+
+        <KPIStats
+          stats={[
+            {
+              title: 'Total de Tickets',
+              value: kpis.total,
+              icon: TicketIcon,
+              description: 'No período selecionado',
+            },
+            {
+              title: 'Tickets Resolvidos',
+              value: kpis.resolved,
+              icon: CheckCircle2,
+              description: 'Total finalizado',
+            },
+            {
+              title: 'Tempo Médio Resolução',
+              value: `${kpis.avgResolutionTime}h`,
+              icon: Clock,
+              description: 'Horas por ticket',
+            },
+            {
+              title: 'Tempo Médio 1ª Resposta',
+              value: `${kpis.avgFirstResponse}h`,
+              icon: Timer,
+              description: 'Estimativa',
+            },
+          ]}
+        />
+
+        {/* Primary Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TicketsOverTimeChart data={ticketsOverTimeData} />
+          <StatusDistributionChart data={statusDistributionData} />
+        </div>
+
+        {/* Secondary Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopIssuesChart data={topIssuesData} />
+          <ArenaDistributionChart data={arenaDistributionData} />
+        </div>
+
+        {/* Tertiary Charts */}
+        <div className="grid grid-cols-1 gap-6">
+          <AgentPerformanceChart data={agentPerformanceData} />
+        </div>
+
+        {/* Detailed Table Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Detalhamento dos Tickets</h2>
+          <DetailedTicketsTable data={filteredTickets} />
+        </div>
       </div>
 
-      <ReportFilters
+      {/* Hidden Print Document */}
+      <ReportDocument
         dateRange={dateRange}
-        setDateRange={setDateRange}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        clientFilter={clientFilter}
-        setClientFilter={setClientFilter}
-        agentFilter={agentFilter}
-        setAgentFilter={setAgentFilter}
-        problemTypeFilter={problemTypeFilter}
-        setProblemTypeFilter={setProblemTypeFilter}
-        onExportPDF={handleExportPDF}
-        onExportCSV={handleExportCSV}
+        kpis={kpis}
+        ticketsOverTimeData={ticketsOverTimeData}
+        agentPerformanceData={agentPerformanceData}
+        statusDistributionData={statusDistributionData}
+        topIssuesData={topIssuesData}
+        arenaDistributionData={arenaDistributionData}
+        detailedTickets={filteredTickets}
       />
-
-      <KPIStats
-        stats={[
-          {
-            title: 'Total de Tickets',
-            value: kpis.total,
-            icon: TicketIcon,
-            description: 'No período selecionado',
-          },
-          {
-            title: 'Tickets Resolvidos',
-            value: kpis.resolved,
-            icon: CheckCircle2,
-            description: 'Total finalizado',
-          },
-          {
-            title: 'Tempo Médio Resolução',
-            value: `${kpis.avgResolutionTime}h`,
-            icon: Clock,
-            description: 'Horas por ticket',
-          },
-          {
-            title: 'Tempo Médio 1ª Resposta',
-            value: `${kpis.avgFirstResponse}h`,
-            icon: Timer,
-            description: 'Estimativa',
-          },
-        ]}
-      />
-
-      {/* Primary Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TicketsOverTimeChart data={ticketsOverTimeData} />
-        <StatusDistributionChart data={statusDistributionData} />
-      </div>
-
-      {/* Secondary Charts (New) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopIssuesChart data={topIssuesData} />
-        <ArenaDistributionChart data={arenaDistributionData} />
-      </div>
-
-      {/* Tertiary Charts */}
-      <div className="grid grid-cols-1 gap-6">
-        <AgentPerformanceChart data={agentPerformanceData} />
-      </div>
-    </div>
+    </>
   )
 }
