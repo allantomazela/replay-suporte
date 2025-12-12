@@ -5,13 +5,15 @@ import { KPIStats } from '@/components/reports/KPIStats'
 import { TicketsOverTimeChart } from '@/components/reports/charts/TicketsOverTimeChart'
 import { AgentPerformanceChart } from '@/components/reports/charts/AgentPerformanceChart'
 import { StatusDistributionChart } from '@/components/reports/charts/StatusDistributionChart'
+import { TopIssuesChart } from '@/components/reports/charts/TopIssuesChart'
+import { ArenaDistributionChart } from '@/components/reports/charts/ArenaDistributionChart'
 import { DateRange } from 'react-day-picker'
 import { subDays, isWithinInterval, format, differenceInHours } from 'date-fns'
 import { Clock, CheckCircle2, TicketIcon, Timer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Reports() {
-  const { tickets } = useAppContext()
+  const { tickets, clients } = useAppContext()
   const { toast } = useToast()
 
   // Filters State
@@ -22,6 +24,7 @@ export default function Reports() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [clientFilter, setClientFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
+  const [problemTypeFilter, setProblemTypeFilter] = useState('all')
 
   // Data Filtering
   const filteredTickets = useMemo(() => {
@@ -50,10 +53,22 @@ export default function Reports() {
         return false
       if (agentFilter !== 'all' && ticket.responsibleId !== agentFilter)
         return false
+      if (
+        problemTypeFilter !== 'all' &&
+        ticket.customData?.problemType !== problemTypeFilter
+      )
+        return false
 
       return true
     })
-  }, [tickets, dateRange, statusFilter, clientFilter, agentFilter])
+  }, [
+    tickets,
+    dateRange,
+    statusFilter,
+    clientFilter,
+    agentFilter,
+    problemTypeFilter,
+  ])
 
   // KPIs Calculation
   const kpis = useMemo(() => {
@@ -80,7 +95,6 @@ export default function Reports() {
       : '0'
 
     // Avg First Response (Simulated: 20% of resolution time or 2h if open)
-    // In real app, we would use a specific field like `firstResponseAt`
     const avgFirstResponse = resolvedCount
       ? (totalResolutionHours / resolvedCount / 5).toFixed(1)
       : '0.5'
@@ -95,11 +109,9 @@ export default function Reports() {
       const date = format(new Date(t.createdAt), 'dd/MM')
       map.set(date, (map.get(date) || 0) + 1)
     })
-    // Sort by date would be better, but map iteration order is insertion order usually if inserted in order.
-    // Let's ensure sort.
     return Array.from(map.entries())
       .map(([date, count]) => ({ date, count }))
-      .reverse() // Mock data is sorted descending, so reverse to get ascending time
+      .reverse()
   }, [filteredTickets])
 
   const agentPerformanceData = useMemo(() => {
@@ -146,13 +158,31 @@ export default function Reports() {
     }))
   }, [filteredTickets])
 
+  const topIssuesData = useMemo(() => {
+    const map = new Map<string, number>()
+    filteredTickets.forEach((t) => {
+      const type = t.customData?.problemType || 'Não Classificado'
+      map.set(type, (map.get(type) || 0) + 1)
+    })
+    return Array.from(map.entries()).map(([name, count]) => ({ name, count }))
+  }, [filteredTickets])
+
+  const arenaDistributionData = useMemo(() => {
+    const map = new Map<string, number>()
+    filteredTickets.forEach((t) => {
+      const client = clients.find((c) => c.id === t.clientId)
+      const name = client ? client.arenaName : 'Desconhecida'
+      map.set(name, (map.get(name) || 0) + 1)
+    })
+    return Array.from(map.entries()).map(([name, count]) => ({ name, count }))
+  }, [filteredTickets, clients])
+
   // Exports
   const handleExportPDF = () => {
     toast({
       title: 'Exportando PDF',
       description: 'A geração do relatório PDF foi iniciada (Simulação).',
     })
-    // Simulate print
     setTimeout(() => window.print(), 1000)
   }
 
@@ -160,21 +190,28 @@ export default function Reports() {
     const headers = [
       'ID',
       'Cliente',
+      'Arena',
       'Assunto',
+      'Tipo de Problema',
       'Status',
       'Responsável',
       'Data Criação',
       'Data Atualização',
     ]
-    const rows = filteredTickets.map((t) => [
-      t.id,
-      t.clientName,
-      t.title,
-      t.status,
-      t.responsibleName,
-      t.createdAt,
-      t.updatedAt,
-    ])
+    const rows = filteredTickets.map((t) => {
+      const client = clients.find((c) => c.id === t.clientId)
+      return [
+        t.id,
+        t.clientName,
+        client?.arenaName || '',
+        t.title,
+        t.customData?.problemType || '',
+        t.status,
+        t.responsibleName,
+        t.createdAt,
+        t.updatedAt,
+      ]
+    })
 
     const csvContent =
       'data:text/csv;charset=utf-8,' +
@@ -209,6 +246,8 @@ export default function Reports() {
         setClientFilter={setClientFilter}
         agentFilter={agentFilter}
         setAgentFilter={setAgentFilter}
+        problemTypeFilter={problemTypeFilter}
+        setProblemTypeFilter={setProblemTypeFilter}
         onExportPDF={handleExportPDF}
         onExportCSV={handleExportCSV}
       />
@@ -242,11 +281,19 @@ export default function Reports() {
         ]}
       />
 
+      {/* Primary Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TicketsOverTimeChart data={ticketsOverTimeData} />
         <StatusDistributionChart data={statusDistributionData} />
       </div>
 
+      {/* Secondary Charts (New) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopIssuesChart data={topIssuesData} />
+        <ArenaDistributionChart data={arenaDistributionData} />
+      </div>
+
+      {/* Tertiary Charts */}
       <div className="grid grid-cols-1 gap-6">
         <AgentPerformanceChart data={agentPerformanceData} />
       </div>

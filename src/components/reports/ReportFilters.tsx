@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { DateRange } from 'react-day-picker'
-import { useState } from 'react'
 
 interface ReportFiltersProps {
   dateRange: DateRange | undefined
@@ -29,6 +28,8 @@ interface ReportFiltersProps {
   setClientFilter: (val: string) => void
   agentFilter: string
   setAgentFilter: (val: string) => void
+  problemTypeFilter: string
+  setProblemTypeFilter: (val: string) => void
   onExportPDF: () => void
   onExportCSV: () => void
 }
@@ -42,10 +43,12 @@ export function ReportFilters({
   setClientFilter,
   agentFilter,
   setAgentFilter,
+  problemTypeFilter,
+  setProblemTypeFilter,
   onExportPDF,
   onExportCSV,
 }: ReportFiltersProps) {
-  const { clients, tickets } = useAppContext()
+  const { clients, tickets, customFields } = useAppContext()
 
   // Get unique agents from tickets to populate the select
   const uniqueAgents = Array.from(
@@ -55,9 +58,19 @@ export function ReportFilters({
     return { id: t?.responsibleId || 'unknown', name }
   })
 
+  // Get problem types from custom fields or fallback
+  const problemTypeField = customFields.find((f) => f.id === 'problemType')
+  const problemTypes = problemTypeField?.options || [
+    'Hardware',
+    'Software',
+    'Rede',
+    'Operacional',
+    'Outro',
+  ]
+
   return (
     <div className="space-y-4 bg-card p-4 rounded-lg border shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Date Range Picker */}
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">Período</span>
@@ -147,6 +160,27 @@ export function ReportFilters({
               {uniqueAgents.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Problem Type Filter */}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Tipo de Problema</span>
+          <Select
+            value={problemTypeFilter}
+            onValueChange={setProblemTypeFilter}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Todos os Tipos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {problemTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -66,11 +66,19 @@ export const MOCK_CUSTOM_FIELDS: CustomFieldDefinition[] = [
     placeholder: 'Selecione a prioridade',
   },
   {
-    id: 'equipmentType',
-    label: 'Tipo de Equipamento',
-    type: 'text',
-    required: false,
-    placeholder: 'Ex: Câmera, Servidor, Switch',
+    id: 'problemType',
+    label: 'Tipo de Problema',
+    type: 'select',
+    options: [
+      'Hardware',
+      'Software',
+      'Rede',
+      'Operacional',
+      'Infraestrutura',
+      'Outro',
+    ],
+    required: true,
+    placeholder: 'Selecione o tipo',
   },
   {
     id: 'incidentDate',
@@ -100,7 +108,7 @@ const generateMockTickets = (): Ticket[] => {
       attachments: [],
       customData: {
         priority: 'Alta',
-        equipmentType: 'Servidor',
+        problemType: 'Software',
       },
     },
     {
@@ -118,6 +126,7 @@ const generateMockTickets = (): Ticket[] => {
       attachments: [],
       customData: {
         priority: 'Baixa',
+        problemType: 'Operacional',
       },
     },
     {
@@ -134,7 +143,7 @@ const generateMockTickets = (): Ticket[] => {
       attachments: [],
       customData: {
         priority: 'Crítica',
-        equipmentType: 'Software',
+        problemType: 'Infraestrutura',
       },
     },
     {
@@ -151,6 +160,7 @@ const generateMockTickets = (): Ticket[] => {
       attachments: [],
       customData: {
         priority: 'Média',
+        problemType: 'Software',
       },
     },
   ]
@@ -164,8 +174,16 @@ const generateMockTickets = (): Ticket[] => {
   ]
   const clients = MOCK_CLIENTS
   const priorities = ['Baixa', 'Média', 'Alta', 'Crítica']
+  const problemTypes = [
+    'Hardware',
+    'Software',
+    'Rede',
+    'Operacional',
+    'Infraestrutura',
+    'Outro',
+  ]
 
-  for (let i = 5; i <= 35; i++) {
+  for (let i = 5; i <= 45; i++) {
     const status = statuses[Math.floor(Math.random() * statuses.length)]
     const agent = agents[Math.floor(Math.random() * agents.length)]
     const client = clients[Math.floor(Math.random() * clients.length)]
@@ -177,6 +195,8 @@ const generateMockTickets = (): Ticket[] => {
         : createdAt
 
     const priority = priorities[Math.floor(Math.random() * priorities.length)]
+    const problemType =
+      problemTypes[Math.floor(Math.random() * problemTypes.length)]
 
     tickets.push({
       id: `t${i}`,
@@ -192,6 +212,7 @@ const generateMockTickets = (): Ticket[] => {
       attachments: [],
       customData: {
         priority,
+        problemType,
       },
     })
   }

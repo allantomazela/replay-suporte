@@ -2,13 +2,14 @@ import { useAppContext } from '@/context/AppContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge'
 import { Button } from '@/components/ui/button'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   FileText,
   Clock,
   CheckCircle,
   AlertCircle,
   ArrowRight,
+  BarChart3,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<'all' | 'today' | 'week'>('all')
   const [filteredTickets, setFilteredTickets] = useState(tickets)
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   // Metrics
   const totalTickets = tickets.length
@@ -80,27 +82,37 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Dashboard
         </h1>
-        <div className="flex gap-2 bg-muted p-1 rounded-lg">
+        <div className="flex flex-wrap gap-2">
           <Button
-            variant={filter === 'today' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setFilter('today')}
-            className={
-              filter === 'today' ? 'shadow-sm' : 'hover:bg-background/50'
-            }
+            variant="outline"
+            className="hidden md:flex"
+            onClick={() => navigate('/reports')}
           >
-            Hoje
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Relatórios
           </Button>
-          <Button
-            variant={filter === 'all' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className={
-              filter === 'all' ? 'shadow-sm' : 'hover:bg-background/50'
-            }
-          >
-            Todos
-          </Button>
+          <div className="flex gap-2 bg-muted p-1 rounded-lg">
+            <Button
+              variant={filter === 'today' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('today')}
+              className={
+                filter === 'today' ? 'shadow-sm' : 'hover:bg-background/50'
+              }
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={filter === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('all')}
+              className={
+                filter === 'all' ? 'shadow-sm' : 'hover:bg-background/50'
+              }
+            >
+              Todos
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -203,6 +215,31 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions / Access to Reports */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="hover:border-primary/50 transition-colors">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Relatórios Completos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-sm mb-4">
+              Acesse indicadores detalhados, tendências de volume e problemas
+              recorrentes.
+            </p>
+            <Button
+              className="w-full"
+              variant="secondary"
+              onClick={() => navigate('/reports')}
+            >
+              Acessar Relatórios
+            </Button>
           </CardContent>
         </Card>
       </div>
