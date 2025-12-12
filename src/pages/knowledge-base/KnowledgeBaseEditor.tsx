@@ -3,7 +3,6 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -15,7 +14,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { z } from 'zod'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Form,
@@ -45,12 +44,35 @@ export default function KnowledgeBaseEditor() {
     addArticle,
     updateArticle,
     user,
+    getKBPermissions,
   } = useAppContext()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isEditing = !!id
   const article = id ? getArticleById(id) : undefined
+
+  // Permissions check
+  const permissions = getKBPermissions(article?.author)
+
+  useEffect(() => {
+    if (isEditing && article && !permissions.canEdit) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Você não tem permissão para editar este artigo.',
+        variant: 'destructive',
+      })
+      navigate('/knowledge-base')
+    }
+    if (!isEditing && !permissions.canCreate) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Você não tem permissão para criar artigos.',
+        variant: 'destructive',
+      })
+      navigate('/knowledge-base')
+    }
+  }, [isEditing, article, permissions, navigate, toast])
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -115,7 +137,7 @@ export default function KnowledgeBaseEditor() {
         })
         toast({
           title: 'Artigo Atualizado',
-          description: 'As alterações foram salvas com sucesso.',
+          description: 'Uma nova versão foi salva no histórico.',
         })
         navigate(`/knowledge-base/articles/${id}`)
       } else {
@@ -172,7 +194,7 @@ export default function KnowledgeBaseEditor() {
         </h1>
         <p className="text-muted-foreground">
           {isEditing
-            ? 'Atualize o conteúdo do artigo da base de conhecimento.'
+            ? 'Atualize o conteúdo do artigo. Uma nova versão será criada.'
             : 'Crie um novo guia ou tutorial para a base de conhecimento.'}
         </p>
       </div>
@@ -268,7 +290,7 @@ export default function KnowledgeBaseEditor() {
                   ) : (
                     <Save className="mr-2 h-4 w-4" />
                   )}
-                  {isEditing ? 'Atualizar Artigo' : 'Publicar Artigo'}
+                  {isEditing ? 'Salvar Nova Versão' : 'Publicar Artigo'}
                 </Button>
               </div>
             </form>

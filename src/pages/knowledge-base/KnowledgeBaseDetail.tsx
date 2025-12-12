@@ -14,6 +14,7 @@ import {
   Printer,
   Edit,
   Trash2,
+  History,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -29,15 +30,21 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { VersionHistoryDialog } from '@/components/knowledge-base/VersionHistoryDialog'
+import { RelatedArticles } from '@/components/knowledge-base/RelatedArticles'
 
 export default function KnowledgeBaseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getArticleById, deleteArticle } = useAppContext()
+  const { getArticleById, deleteArticle, getKBPermissions, knowledgeArticles } =
+    useAppContext()
   const { toast } = useToast()
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   const article = id ? getArticleById(id) : undefined
+  const permissions = getKBPermissions(article?.author)
 
   if (!article) {
     return (
@@ -83,19 +90,32 @@ export default function KnowledgeBaseDetail() {
           </Link>
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/knowledge-base/edit/${article.id}`}>
-              <Edit className="mr-2 h-4 w-4" /> Editar
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-          </Button>
+          {permissions.canViewHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsHistoryOpen(true)}
+            >
+              <History className="mr-2 h-4 w-4" /> Histórico
+            </Button>
+          )}
+          {permissions.canEdit && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/knowledge-base/edit/${article.id}`}>
+                <Edit className="mr-2 h-4 w-4" /> Editar
+              </Link>
+            </Button>
+          )}
+          {permissions.canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+            </Button>
+          )}
         </div>
       </div>
 
@@ -142,7 +162,6 @@ export default function KnowledgeBaseDetail() {
         <div className="lg:col-span-8">
           <Card className="border-none shadow-sm">
             <CardContent className="p-6 md:p-8 prose prose-slate dark:prose-invert max-w-none">
-              {/* Utilizing Dangerously Set Inner HTML for rich content simulation */}
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             </CardContent>
           </Card>
@@ -184,6 +203,11 @@ export default function KnowledgeBaseDetail() {
             </CardContent>
           </Card>
 
+          <RelatedArticles
+            currentArticle={article}
+            allArticles={knowledgeArticles}
+          />
+
           <Card>
             <CardContent className="p-6 space-y-4">
               <h3 className="font-semibold text-sm uppercase text-muted-foreground tracking-wider">
@@ -194,6 +218,12 @@ export default function KnowledgeBaseDetail() {
                   <span className="text-muted-foreground">Criado em:</span>
                   <span>
                     {format(new Date(article.createdAt), 'dd/MM/yyyy')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Versão Atual:</span>
+                  <span>
+                    {article.versions ? article.versions.length + 1 : 1}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -218,6 +248,12 @@ export default function KnowledgeBaseDetail() {
           </Card>
         </div>
       </div>
+
+      <VersionHistoryDialog
+        article={article}
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+      />
 
       <AlertDialog
         open={isDeleteDialogOpen}

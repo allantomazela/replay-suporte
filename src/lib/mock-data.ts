@@ -291,6 +291,7 @@ export const MOCK_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     tags: ['encoder', 'video', 'setup'],
     views: 1240,
     helpfulCount: 45,
+    versions: [],
   },
   {
     id: 'kb2',
@@ -317,6 +318,7 @@ export const MOCK_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     tags: ['erro', 'upload', 'servidor'],
     views: 856,
     helpfulCount: 120,
+    versions: [],
   },
   {
     id: 'kb3',
@@ -346,6 +348,7 @@ export const MOCK_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     tags: ['eventos', 'tutorial', 'operacao'],
     views: 2100,
     helpfulCount: 310,
+    versions: [],
   },
   {
     id: 'kb4',
@@ -365,6 +368,7 @@ export const MOCK_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     tags: ['api', 'placar', 'integracao'],
     views: 430,
     helpfulCount: 12,
+    versions: [],
   },
   {
     id: 'kb5',
@@ -390,5 +394,6 @@ export const MOCK_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     tags: ['sla', 'contrato', 'suporte'],
     views: 150,
     helpfulCount: 5,
+    versions: [],
   },
 ]

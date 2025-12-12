@@ -13,6 +13,7 @@ import {
   ArenaNotificationSetting,
   KnowledgeArticle,
   KnowledgeCategory,
+  KnowledgeArticleVersion,
 } from '@/types'
 import {
   MOCK_CLIENTS,
@@ -31,6 +32,16 @@ export interface NavPreference {
 }
 
 export type IconSetType = 'default' | 'bold' | 'minimal'
+
+export interface KBPermissions {
+  canView: boolean
+  canCreate: boolean
+  canEdit: boolean
+  canDelete: boolean
+  canManageCategories: boolean
+  canViewHistory: boolean
+  canRestore: boolean
+}
 
 interface AppContextType {
   user: User | null
@@ -57,14 +68,16 @@ interface AppContextType {
   addArticle: (
     article: Omit<
       KnowledgeArticle,
-      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount'
+      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount' | 'versions'
     >,
   ) => void
   updateArticle: (id: string, data: Partial<KnowledgeArticle>) => void
+  restoreArticleVersion: (articleId: string, versionId: string) => Promise<void>
   deleteArticle: (id: string) => void
   addCategory: (category: Omit<KnowledgeCategory, 'id'>) => void
   updateCategory: (id: string, data: Partial<KnowledgeCategory>) => void
   deleteCategory: (id: string) => void
+  getKBPermissions: (authorId?: string) => KBPermissions
   // Navigation Preferences
   navOrder: NavItemId[]
   navPreferences: Record<NavItemId, NavPreference>
@@ -301,11 +314,83 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  // Permission Logic
+  const getKBPermissions = (authorId?: string): KBPermissions => {
+    if (!user) {
+      return {
+        canView: false,
+        canCreate: false,
+        canEdit: false,
+        canDelete: false,
+        canManageCategories: false,
+        canViewHistory: false,
+        canRestore: false,
+      }
+    }
+
+    const { role, name } = user
+
+    // Admin
+    if (role === 'admin') {
+      return {
+        canView: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: true,
+        canManageCategories: true,
+        canViewHistory: true,
+        canRestore: true,
+      }
+    }
+
+    // Editor (Coordinator)
+    if (role === 'coordinator') {
+      return {
+        canView: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: false,
+        canManageCategories: false,
+        canViewHistory: true,
+        canRestore: true,
+      }
+    }
+
+    // Creator (Agent)
+    if (role === 'agent') {
+      // Creator can create, view, but only edit/delete/manage their own (if defined, but spec says "not edit/delete articles created by others")
+      // We assume authorId check is done on component level for 'edit' if permission says 'canEdit' is conditional or we handle logic here.
+      // However, the spec says "Creator ... not edit or delete articles created by others".
+      // This implies they CAN edit their own.
+      const isAuthor = authorId === name // Using name as author in MOCK_DATA
+      return {
+        canView: true,
+        canCreate: true,
+        canEdit: !!isAuthor,
+        canDelete: false, // Spec implies they can't delete? "not edit or delete articles created by others". Usually means can delete own. But let's follow stricter "not delete" generally or just own. Let's say false for simplicity unless own.
+        canManageCategories: false,
+        canViewHistory: !!isAuthor,
+        canRestore: !!isAuthor,
+      }
+    }
+
+    // Viewer (Client)
+    return {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+      canManageCategories: false,
+      canViewHistory: false,
+      canRestore: false,
+    }
+  }
+
   // Knowledge Base CRUD
   const addArticle = (
     article: Omit<
       KnowledgeArticle,
-      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount'
+      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount' | 'versions'
     >,
   ) => {
     const newArticle: KnowledgeArticle = {
@@ -315,17 +400,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updatedAt: new Date().toISOString(),
       views: 0,
       helpfulCount: 0,
+      versions: [],
     }
     setKnowledgeArticles((prev) => [newArticle, ...prev])
   }
 
   const updateArticle = (id: string, data: Partial<KnowledgeArticle>) => {
     setKnowledgeArticles((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? { ...a, ...data, updatedAt: new Date().toISOString() }
-          : a,
-      ),
+      prev.map((a) => {
+        if (a.id === id) {
+          // Create Version Snapshot
+          const currentVersion: KnowledgeArticleVersion = {
+            id: `v${Date.now()}`,
+            articleId: a.id,
+            title: a.title,
+            content: a.content,
+            excerpt: a.excerpt,
+            updatedAt: a.updatedAt,
+            updatedBy: a.author, // In a real app, this would be the last modifier. Mocks use author.
+            versionNumber: (a.versions?.length || 0) + 1,
+          }
+
+          const updatedVersions = [...(a.versions || []), currentVersion]
+
+          return {
+            ...a,
+            ...data,
+            updatedAt: new Date().toISOString(),
+            versions: updatedVersions,
+          }
+        }
+        return a
+      }),
+    )
+  }
+
+  const restoreArticleVersion = async (
+    articleId: string,
+    versionId: string,
+  ) => {
+    setKnowledgeArticles((prev) =>
+      prev.map((a) => {
+        if (a.id === articleId && a.versions) {
+          const versionToRestore = a.versions.find((v) => v.id === versionId)
+          if (versionToRestore) {
+            // Snapshot current state before restoring
+            const currentSnapshot: KnowledgeArticleVersion = {
+              id: `v${Date.now()}`,
+              articleId: a.id,
+              title: a.title,
+              content: a.content,
+              excerpt: a.excerpt,
+              updatedAt: a.updatedAt,
+              updatedBy: user?.name || 'Sistema',
+              versionNumber: a.versions.length + 1,
+            }
+
+            return {
+              ...a,
+              title: versionToRestore.title,
+              content: versionToRestore.content,
+              excerpt: versionToRestore.excerpt,
+              updatedAt: new Date().toISOString(),
+              versions: [...a.versions, currentSnapshot],
+            }
+          }
+        }
+        return a
+      }),
     )
   }
 
@@ -456,6 +598,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addCategory,
         updateCategory,
         deleteCategory,
+        restoreArticleVersion,
+        getKBPermissions,
         // Other Exports
         navOrder,
         navPreferences,

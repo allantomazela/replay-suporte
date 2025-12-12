@@ -83,6 +83,17 @@ export interface KnowledgeCategory {
   description?: string
 }
 
+export interface KnowledgeArticleVersion {
+  id: string
+  articleId: string
+  title: string
+  content: string
+  excerpt: string
+  updatedAt: string
+  updatedBy: string
+  versionNumber: number
+}
+
 export interface KnowledgeArticle {
   id: string
   title: string
@@ -96,4 +107,5 @@ export interface KnowledgeArticle {
   tags: string[]
   views: number
   helpfulCount: number
+  versions?: KnowledgeArticleVersion[]
 }

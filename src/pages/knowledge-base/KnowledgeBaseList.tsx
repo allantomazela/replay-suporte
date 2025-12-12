@@ -16,28 +16,54 @@ import {
   X,
   Plus,
   Settings,
+  Check,
 } from 'lucide-react'
 import { ArticleCard } from '@/components/knowledge-base/ArticleCard'
 import { Badge } from '@/components/ui/badge'
 import { Link } from 'react-router-dom'
 import { CategoryManagerDialog } from '@/components/knowledge-base/CategoryManagerDialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 
 export default function KnowledgeBaseList() {
-  const { knowledgeArticles, knowledgeCategories } = useAppContext()
+  const { knowledgeArticles, knowledgeCategories, getKBPermissions } =
+    useAppContext()
+  const permissions = getKBPermissions()
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [sortOption, setSortOption] = useState<string>('updated')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [sortOption, setSortOption] = useState<string>('updated_desc')
 
   // Dialog State
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId],
+    )
+  }
 
   // Derived filtered/sorted articles
   const filteredArticles = useMemo(() => {
     return knowledgeArticles
       .filter((article) => {
-        // Search Filter
+        // Advanced Search Filter (Title, Excerpt, Content, Tags)
         const searchLower = searchTerm.toLowerCase()
         const matchesSearch =
           article.title.toLowerCase().includes(searchLower) ||
@@ -45,40 +71,51 @@ export default function KnowledgeBaseList() {
           article.content.toLowerCase().includes(searchLower) ||
           article.tags.some((tag) => tag.toLowerCase().includes(searchLower))
 
-        // Category Filter
+        // Multi-Category Filter
         const matchesCategory =
-          categoryFilter === 'all' || article.categoryId === categoryFilter
+          selectedCategories.length === 0 ||
+          selectedCategories.includes(article.categoryId)
 
         return matchesSearch && matchesCategory
       })
       .sort((a, b) => {
-        // Sort Logic
+        // Enhanced Sort Logic
         switch (sortOption) {
-          case 'updated':
+          case 'updated_desc':
             return (
               new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
             )
-          case 'created':
+          case 'updated_asc':
+            return (
+              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+            )
+          case 'created_desc':
             return (
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             )
-          case 'views':
+          case 'created_asc':
+            return (
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            )
+          case 'views_desc':
             return b.views - a.views
           case 'az':
             return a.title.localeCompare(b.title)
+          case 'za':
+            return b.title.localeCompare(a.title)
           default:
             return 0
         }
       })
-  }, [knowledgeArticles, searchTerm, categoryFilter, sortOption])
+  }, [knowledgeArticles, searchTerm, selectedCategories, sortOption])
 
   const handleResetFilters = () => {
     setSearchTerm('')
-    setCategoryFilter('all')
-    setSortOption('updated')
+    setSelectedCategories([])
+    setSortOption('updated_desc')
   }
 
-  const hasActiveFilters = searchTerm !== '' || categoryFilter !== 'all'
+  const hasActiveFilters = searchTerm !== '' || selectedCategories.length > 0
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -98,24 +135,28 @@ export default function KnowledgeBaseList() {
           </p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <Button
-            variant="outline"
-            onClick={() => setIsCategoryManagerOpen(true)}
-            className="flex-1 md:flex-none"
-          >
-            <Settings className="mr-2 h-4 w-4" /> Categorias
-          </Button>
-          <Button asChild className="flex-1 md:flex-none">
-            <Link to="/knowledge-base/new">
-              <Plus className="mr-2 h-4 w-4" /> Novo Artigo
-            </Link>
-          </Button>
+          {permissions.canManageCategories && (
+            <Button
+              variant="outline"
+              onClick={() => setIsCategoryManagerOpen(true)}
+              className="flex-1 md:flex-none"
+            >
+              <Settings className="mr-2 h-4 w-4" /> Categorias
+            </Button>
+          )}
+          {permissions.canCreate && (
+            <Button asChild className="flex-1 md:flex-none">
+              <Link to="/knowledge-base/new">
+                <Plus className="mr-2 h-4 w-4" /> Novo Artigo
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
       <div className="bg-card p-4 rounded-lg shadow-sm border space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {/* Search */}
+          {/* Advanced Search */}
           <div className="relative md:col-span-6 lg:col-span-7">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -126,24 +167,66 @@ export default function KnowledgeBaseList() {
             />
           </div>
 
-          {/* Category Filter */}
+          {/* Enhanced Multi-Category Filter */}
           <div className="md:col-span-3 lg:col-span-3">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Categorias</SelectItem>
-                {knowledgeCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between font-normal"
+                >
+                  {selectedCategories.length === 0
+                    ? 'Todas as Categorias'
+                    : `${selectedCategories.length} selecionada(s)`}
+                  <SlidersHorizontal className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Filtrar categorias..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {knowledgeCategories.map((category) => (
+                        <CommandItem
+                          key={category.id}
+                          onSelect={() => toggleCategory(category.id)}
+                        >
+                          <div
+                            className={cn(
+                              'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                              selectedCategories.includes(category.id)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'opacity-50 [&_svg]:invisible',
+                            )}
+                          >
+                            <Check className={cn('h-4 w-4')} />
+                          </div>
+                          <span>{category.name}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {selectedCategories.length > 0 && (
+                      <>
+                        <CommandSeparator />
+                        <CommandGroup>
+                          <CommandItem
+                            onSelect={() => setSelectedCategories([])}
+                            className="justify-center text-center font-medium text-muted-foreground"
+                          >
+                            Limpar Filtros
+                          </CommandItem>
+                        </CommandGroup>
+                      </>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Sort */}
+          {/* Enhanced Sort */}
           <div className="md:col-span-3 lg:col-span-2">
             <Select value={sortOption} onValueChange={setSortOption}>
               <SelectTrigger>
@@ -151,10 +234,17 @@ export default function KnowledgeBaseList() {
                 <SelectValue placeholder="Ordenar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="updated">Recentes</SelectItem>
-                <SelectItem value="created">Data de Criação</SelectItem>
-                <SelectItem value="views">Mais Vistos</SelectItem>
+                <SelectItem value="updated_desc">Recentes</SelectItem>
+                <SelectItem value="updated_asc">
+                  Antigos (Atualização)
+                </SelectItem>
+                <SelectItem value="created_desc">
+                  Criados Recentemente
+                </SelectItem>
+                <SelectItem value="created_asc">Criados Antigamente</SelectItem>
+                <SelectItem value="views_desc">Mais Vistos</SelectItem>
                 <SelectItem value="az">A-Z</SelectItem>
+                <SelectItem value="za">Z-A</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -162,40 +252,42 @@ export default function KnowledgeBaseList() {
 
         {hasActiveFilters && (
           <div className="flex items-center justify-between border-t pt-4">
-            <div className="text-sm text-muted-foreground">
-              Encontrados <strong>{filteredArticles.length}</strong> artigos
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-muted-foreground mr-2">
+                Filtros ativos:
+              </span>
+              {selectedCategories.map((catId) => {
+                const cat = knowledgeCategories.find((c) => c.id === catId)
+                return (
+                  <Badge key={catId} variant="secondary" className="text-xs">
+                    {cat?.name}
+                    <X
+                      className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => toggleCategory(catId)}
+                    />
+                  </Badge>
+                )
+              })}
+              {searchTerm && (
+                <Badge variant="secondary" className="text-xs">
+                  Busca: "{searchTerm}"
+                  <X
+                    className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => setSearchTerm('')}
+                  />
+                </Badge>
+              )}
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleResetFilters}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground shrink-0 ml-auto"
             >
-              <X className="mr-2 h-3 w-3" /> Limpar Filtros
+              <X className="mr-2 h-3 w-3" /> Limpar Tudo
             </Button>
           </div>
         )}
-      </div>
-
-      {/* Category Tags (Quick Filter) */}
-      <div className="flex flex-wrap gap-2">
-        <Badge
-          variant={categoryFilter === 'all' ? 'default' : 'outline'}
-          className="cursor-pointer hover:bg-primary/90 text-sm py-1 px-3"
-          onClick={() => setCategoryFilter('all')}
-        >
-          Todas
-        </Badge>
-        {knowledgeCategories.map((cat) => (
-          <Badge
-            key={cat.id}
-            variant={categoryFilter === cat.id ? 'default' : 'outline'}
-            className="cursor-pointer hover:bg-primary/80 transition-colors text-sm py-1 px-3"
-            onClick={() => setCategoryFilter(cat.id)}
-          >
-            {cat.name}
-          </Badge>
-        ))}
       </div>
 
       {/* Articles Grid */}
@@ -227,10 +319,12 @@ export default function KnowledgeBaseList() {
         </div>
       )}
 
-      <CategoryManagerDialog
-        open={isCategoryManagerOpen}
-        onOpenChange={setIsCategoryManagerOpen}
-      />
+      {permissions.canManageCategories && (
+        <CategoryManagerDialog
+          open={isCategoryManagerOpen}
+          onOpenChange={setIsCategoryManagerOpen}
+        />
+      )}
     </div>
   )
 }
