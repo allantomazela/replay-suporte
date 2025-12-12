@@ -10,16 +10,21 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge'
-import { Eye, Edit, Plus } from 'lucide-react'
+import { Eye, Edit, Plus, LayoutGrid, List } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { TicketFormDialog } from '@/pages/tickets/TicketForm'
 import { format, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
 import { TicketFilters } from '@/components/tickets/TicketFilters'
 import { DateRange } from 'react-day-picker'
 import { Badge } from '@/components/ui/badge'
+import { TicketKanban } from '@/components/tickets/TicketKanban'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 export default function TicketList() {
   const { tickets, clients } = useAppContext()
+
+  // View Mode State
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table')
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('')
@@ -44,11 +49,15 @@ export default function TicketList() {
   const filteredTickets = tickets.filter((ticket) => {
     const client = clients.find((c) => c.id === ticket.clientId)
 
-    // Text Search
+    // Text Search (Expanded to include Arena Name and Code)
+    const searchLower = searchTerm.toLowerCase()
     const matchesSearch =
-      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.id.includes(searchTerm)
+      ticket.title.toLowerCase().includes(searchLower) ||
+      ticket.description.toLowerCase().includes(searchLower) ||
+      ticket.id.includes(searchTerm) ||
+      (client &&
+        (client.arenaName.toLowerCase().includes(searchLower) ||
+          client.arenaCode.toLowerCase().includes(searchLower)))
 
     // Status Filter
     const matchesStatus =
@@ -69,7 +78,7 @@ export default function TicketList() {
       matchesDate = isWithinInterval(ticketDate, { start, end })
     }
 
-    // Arena Filter (Client Arena Name or Code)
+    // Arena Filter (Specific Advanced Filter)
     let matchesArena = true
     if (arenaFilter && client) {
       const search = arenaFilter.toLowerCase()
@@ -114,9 +123,26 @@ export default function TicketList() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Prontuários de Atendimento
         </h1>
-        <Button onClick={handleNew} className="w-full md:w-auto shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Novo Atendimento
-        </Button>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(val) =>
+              val && setViewMode(val as 'table' | 'kanban')
+            }
+            className="border rounded-md p-1"
+          >
+            <ToggleGroupItem value="table" size="sm" aria-label="Table View">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="kanban" size="sm" aria-label="Kanban View">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Button onClick={handleNew} className="flex-1 md:flex-none shadow-sm">
+            <Plus className="mr-2 h-4 w-4" /> Novo Atendimento
+          </Button>
+        </div>
       </div>
 
       <TicketFilters
@@ -136,108 +162,122 @@ export default function TicketList() {
         onReset={handleResetFilters}
       />
 
-      <div className="bg-card text-card-foreground p-4 rounded-lg shadow-sm border">
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="font-semibold text-foreground">
-                  ID
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Cliente
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Assunto
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Prioridade
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Data
-                </TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  Status
-                </TableHead>
-                <TableHead className="hidden md:table-cell font-semibold text-foreground">
-                  Responsável
-                </TableHead>
-                <TableHead className="text-right font-semibold text-foreground">
-                  Ações
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTickets.map((ticket) => (
-                <TableRow
-                  key={ticket.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <TableCell className="font-medium text-foreground">
-                    #{ticket.id}
-                  </TableCell>
-                  <TableCell className="text-foreground">
-                    {ticket.clientName}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {ticket.title}
-                  </TableCell>
-                  <TableCell>
-                    {ticket.customData?.priority ? (
-                      <Badge variant="secondary">
-                        {ticket.customData.priority}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(ticket.createdAt), 'dd/MM/yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    <TicketStatusBadge status={ticket.status} />
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {ticket.responsibleName}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        asChild
-                        className="hover:bg-blue-50 dark:hover:bg-blue-950/30"
-                      >
-                        <Link to={`/tickets/${ticket.id}`}>
-                          <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        onClick={() => handleEdit(ticket.id)}
-                      >
-                        <Edit className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredTickets.length === 0 && (
+      {viewMode === 'table' ? (
+        <div className="bg-card text-card-foreground p-4 rounded-lg shadow-sm border">
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-12 text-muted-foreground"
-                  >
-                    Nenhum atendimento encontrado.
-                  </TableCell>
+                  <TableHead className="font-semibold text-foreground">
+                    ID
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Cliente / Arena
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Assunto
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Prioridade
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Data
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Status
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell font-semibold text-foreground">
+                    Responsável
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Ações
+                  </TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredTickets.map((ticket) => {
+                  const client = clients.find((c) => c.id === ticket.clientId)
+                  return (
+                    <TableRow
+                      key={ticket.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <TableCell className="font-medium text-foreground">
+                        #{ticket.id}
+                      </TableCell>
+                      <TableCell className="text-foreground">
+                        <div className="flex flex-col">
+                          <span>{ticket.clientName}</span>
+                          {client && (
+                            <span className="text-xs text-muted-foreground">
+                              {client.arenaName} ({client.arenaCode})
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {ticket.title}
+                      </TableCell>
+                      <TableCell>
+                        {ticket.customData?.priority ? (
+                          <Badge variant="secondary">
+                            {ticket.customData.priority}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(ticket.createdAt), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <TicketStatusBadge status={ticket.status} />
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {ticket.responsibleName}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            className="hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                          >
+                            <Link to={`/tickets/${ticket.id}`}>
+                              <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            onClick={() => handleEdit(ticket.id)}
+                          >
+                            <Edit className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {filteredTickets.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-12 text-muted-foreground"
+                    >
+                      Nenhum atendimento encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
+      ) : (
+        <TicketKanban tickets={filteredTickets} onEdit={handleEdit} />
+      )}
 
       <TicketFormDialog
         open={isDialogOpen}

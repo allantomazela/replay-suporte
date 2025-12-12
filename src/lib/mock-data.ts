@@ -18,6 +18,8 @@ export const MOCK_CLIENTS: Client[] = [
     arenaCode: 'MAR01',
     arenaName: 'Maracanã',
     active: true,
+    contractType: 'Premium SLA 4h',
+    technicalManager: 'Roberto Carlos',
   },
   {
     id: 'c2',
@@ -27,6 +29,8 @@ export const MOCK_CLIENTS: Client[] = [
     arenaCode: 'ALL01',
     arenaName: 'Allianz Parque',
     active: true,
+    contractType: 'Standard SLA 24h',
+    technicalManager: 'Marcos Assunção',
   },
   {
     id: 'c3',
@@ -36,6 +40,8 @@ export const MOCK_CLIENTS: Client[] = [
     arenaCode: 'SJA01',
     arenaName: 'São Januário',
     active: true,
+    contractType: 'Enterprise',
+    technicalManager: 'Juninho P.',
   },
   {
     id: 'c4',
@@ -45,6 +51,8 @@ export const MOCK_CLIENTS: Client[] = [
     arenaCode: 'GRE01',
     arenaName: 'Arena do Grêmio',
     active: false,
+    contractType: 'Standard SLA 24h',
+    technicalManager: 'Renato P.',
   },
 ]
 

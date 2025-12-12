@@ -5,7 +5,13 @@ import {
   ReactNode,
   useEffect,
 } from 'react'
-import { Client, Ticket, User, CustomFieldDefinition } from '@/types'
+import {
+  Client,
+  Ticket,
+  User,
+  CustomFieldDefinition,
+  ArenaNotificationSetting,
+} from '@/types'
 import {
   MOCK_CLIENTS,
   MOCK_TICKETS,
@@ -53,6 +59,12 @@ interface AppContextType {
   resetCustomIcon: (id: string) => void
   // Custom Fields
   customFields: CustomFieldDefinition[]
+  // Notification Settings
+  notificationSettings: ArenaNotificationSetting[]
+  updateNotificationSetting: (
+    arenaId: string,
+    setting: Partial<ArenaNotificationSetting>,
+  ) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -93,7 +105,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   >(() => {
     const stored = localStorage.getItem('nav-preferences')
     const parsed = stored ? JSON.parse(stored) : {}
-    // Merge with defaults to ensure new keys exist
     return { ...DEFAULT_PREFERENCES, ...parsed }
   })
 
@@ -105,6 +116,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customIcons, setCustomIcons] = useState<Record<string, string>>(() => {
     const stored = localStorage.getItem('custom-icons')
     return stored ? JSON.parse(stored) : {}
+  })
+
+  // Notification Settings State
+  const [notificationSettings, setNotificationSettings] = useState<
+    ArenaNotificationSetting[]
+  >(() => {
+    const stored = localStorage.getItem('notification-settings')
+    if (stored) return JSON.parse(stored)
+
+    // Default initialization
+    return MOCK_CLIENTS.map((client) => ({
+      arenaId: client.id,
+      events: {
+        statusChange: true,
+        newComment: true,
+        assignmentChange: false,
+      },
+      channels: {
+        inApp: true,
+        email: false,
+      },
+    }))
   })
 
   // Persistence
@@ -124,6 +157,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('custom-icons', JSON.stringify(customIcons))
   }, [customIcons])
 
+  useEffect(() => {
+    localStorage.setItem(
+      'notification-settings',
+      JSON.stringify(notificationSettings),
+    )
+  }, [notificationSettings])
+
   const login = (email: string) => {
     setUser({ ...MOCK_USER, email })
   }
@@ -139,6 +179,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active: true,
     }
     setClients((prev) => [...prev, newClient])
+    // Initialize notification setting for new client
+    setNotificationSettings((prev) => [
+      ...prev,
+      {
+        arenaId: newClient.id,
+        events: {
+          statusChange: true,
+          newComment: true,
+          assignmentChange: false,
+        },
+        channels: {
+          inApp: true,
+          email: false,
+        },
+      },
+    ])
   }
 
   const updateClient = (id: string, data: Partial<Client>) => {
@@ -209,6 +265,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const updateNotificationSetting = (
+    arenaId: string,
+    setting: Partial<ArenaNotificationSetting>,
+  ) => {
+    setNotificationSettings((prev) => {
+      const exists = prev.find((s) => s.arenaId === arenaId)
+      if (exists) {
+        return prev.map((s) =>
+          s.arenaId === arenaId
+            ? {
+                ...s,
+                ...setting,
+                events: { ...s.events, ...setting.events },
+                channels: { ...s.channels, ...setting.channels },
+              }
+            : s,
+        )
+      } else {
+        // Create if not exists (defensive)
+        return [
+          ...prev,
+          {
+            arenaId,
+            events: {
+              statusChange: true,
+              newComment: true,
+              assignmentChange: false,
+              ...setting.events,
+            },
+            channels: {
+              inApp: true,
+              email: false,
+              ...setting.channels,
+            },
+          },
+        ]
+      }
+    })
+  }
+
   const getTicketById = (id: string) => tickets.find((t) => t.id === id)
   const getClientById = (id: string) => clients.find((c) => c.id === id)
 
@@ -237,6 +333,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         uploadCustomIcon,
         resetCustomIcon,
         customFields,
+        notificationSettings,
+        updateNotificationSetting,
       }}
     >
       {children}

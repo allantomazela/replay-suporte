@@ -16,6 +16,9 @@ export interface Client {
   arenaCode: string
   arenaName: string
   active: boolean
+  // New fields for User Story
+  contractType?: string
+  technicalManager?: string
 }
 
 export type TicketStatus = 'Aberto' | 'Em Andamento' | 'Resolvido' | 'Pendente'
@@ -59,4 +62,18 @@ export interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+}
+
+// New Interface for Notification Settings
+export interface ArenaNotificationSetting {
+  arenaId: string
+  events: {
+    statusChange: boolean
+    newComment: boolean
+    assignmentChange: boolean
+  }
+  channels: {
+    inApp: boolean
+    email: boolean
+  }
 }

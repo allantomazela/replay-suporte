@@ -9,7 +9,17 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge'
-import { ArrowLeft, Edit, Paperclip, Clock, User, Calendar } from 'lucide-react'
+import {
+  ArrowLeft,
+  Edit,
+  Paperclip,
+  Clock,
+  User,
+  Calendar,
+  Building2,
+  FileBadge,
+  HardHat,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useState } from 'react'
@@ -51,11 +61,31 @@ export default function TicketDetail() {
           </h1>
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground font-medium">Arena:</span>
               <span>
                 {client?.arenaName || 'N/A'} - {client?.arenaCode || 'N/A'}
               </span>
             </div>
+            {/* Extended Arena Details */}
+            {client?.contractType && (
+              <div className="flex items-center gap-2">
+                <FileBadge className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground font-medium">
+                  Contrato:
+                </span>
+                <span>{client.contractType}</span>
+              </div>
+            )}
+            {client?.technicalManager && (
+              <div className="flex items-center gap-2">
+                <HardHat className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground font-medium">
+                  Responsável Técnico:
+                </span>
+                <span>{client.technicalManager}</span>
+              </div>
+            )}
           </div>
         </div>
         <Button onClick={() => setIsEditOpen(true)} className="shrink-0">
