@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useAppContext } from '@/context/AppContext'
-import { Download, FileText, CalendarIcon } from 'lucide-react'
+import { Download, FileText, CalendarIcon, Loader2 } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
@@ -32,6 +32,7 @@ interface ReportFiltersProps {
   setProblemTypeFilter: (val: string) => void
   onExportPDF: () => void
   onExportCSV: () => void
+  isExporting?: boolean
 }
 
 export function ReportFilters({
@@ -47,6 +48,7 @@ export function ReportFilters({
   setProblemTypeFilter,
   onExportPDF,
   onExportCSV,
+  isExporting = false,
 }: ReportFiltersProps) {
   const { clients, tickets, customFields } = useAppContext()
 
@@ -193,9 +195,18 @@ export function ReportFilters({
           <FileText className="mr-2 h-4 w-4" />
           Exportar CSV
         </Button>
-        <Button variant="default" size="sm" onClick={onExportPDF}>
-          <Download className="mr-2 h-4 w-4" />
-          Gerar PDF
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onExportPDF}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          {isExporting ? 'Gerando PDF...' : 'Gerar PDF'}
         </Button>
       </div>
     </div>

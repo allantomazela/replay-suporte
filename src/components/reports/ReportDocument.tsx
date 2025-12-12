@@ -45,58 +45,44 @@ export function ReportDocument({
       ? `${format(dateRange.from, 'dd/MM/yyyy')} a ${format(dateRange.to, 'dd/MM/yyyy')}`
       : 'Período Completo'
 
+  // CSS variables for light theme forcing
+  const lightThemeVars = {
+    '--background': '0 0% 100%',
+    '--foreground': '222.2 84% 4.9%',
+    '--card': '0 0% 100%',
+    '--card-foreground': '222.2 84% 4.9%',
+    '--popover': '0 0% 100%',
+    '--popover-foreground': '222.2 84% 4.9%',
+    '--primary': '222.2 47.4% 11.2%',
+    '--primary-foreground': '210 40% 98%',
+    '--secondary': '210 40% 96.1%',
+    '--secondary-foreground': '222.2 47.4% 11.2%',
+    '--muted': '210 40% 96.1%',
+    '--muted-foreground': '215.4 16.3% 46.9%',
+    '--accent': '210 40% 96.1%',
+    '--accent-foreground': '222.2 47.4% 11.2%',
+    '--destructive': '0 84.2% 60.2%',
+    '--destructive-foreground': '210 40% 98%',
+    '--border': '214.3 31.8% 91.4%',
+    '--input': '214.3 31.8% 91.4%',
+    '--ring': '222.2 84% 4.9%',
+    '--radius': '0.5rem',
+  } as React.CSSProperties
+
   return (
     <>
-      <style>
-        {`
-        @media print {
-          @page { size: A4; margin: 10mm; }
-          body { 
-            background-color: white !important; 
-            color: black !important; 
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact;
-          }
-          /* Hide all other elements */
-          body > * { 
-            visibility: hidden; 
-            height: 0;
-            overflow: hidden;
-          }
-          
-          /* Show Report Document */
-          #report-document-container { 
-            visibility: visible;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            z-index: 9999;
-            background-color: white;
-            display: block !important;
-          }
-          
-          #report-document-container * {
-            visibility: visible;
-          }
-
-          /* Utility print classes */
-          .no-break { break-inside: avoid; }
-          .page-break { page-break-before: always; }
-          
-          /* Adjust Grid/Flex for print */
-          .print-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-          .print-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-        }
-      `}
-      </style>
+      {/* 
+        This container is positioned off-screen to be captured by html2canvas.
+        It must be visible in the DOM (not display:none) but hidden from the user.
+        We force light mode colors to ensure the PDF looks professional (white paper).
+      */}
       <div
         id="report-document-container"
-        className="bg-white text-black p-8 max-w-[210mm] mx-auto hidden print:block"
+        className="bg-white text-slate-950 p-8 w-[210mm] mx-auto absolute top-0 left-[-9999px] shadow-none pointer-events-none"
+        style={lightThemeVars}
       >
         {/* Header */}
-        <div className="flex justify-between items-start border-b pb-6 mb-8">
+        <div className="flex justify-between items-start border-b border-slate-200 pb-6 mb-8">
           <div className="flex items-center gap-4">
             <img
               src="https://img.usecurling.com/i?q=chart-pie&color=blue"
@@ -123,11 +109,11 @@ export function ReportDocument({
         {/* Content */}
         <div className="space-y-8">
           {/* Section: Executive Summary */}
-          <section className="break-inside-avoid">
+          <section>
             <h2 className="text-lg font-semibold mb-4 border-l-4 border-primary pl-2 uppercase tracking-wide text-slate-900">
               Resumo Executivo
             </h2>
-            <div className="grid grid-cols-4 print-grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg bg-slate-50 border-slate-200">
                 <div className="flex flex-row items-center justify-between pb-2">
                   <span className="text-sm font-medium text-slate-600">
@@ -176,11 +162,11 @@ export function ReportDocument({
           </section>
 
           {/* Section: Volume and Status */}
-          <section className="break-inside-avoid">
+          <section>
             <h2 className="text-lg font-semibold mb-4 border-l-4 border-primary pl-2 uppercase tracking-wide text-slate-900">
               Volume e Distribuição
             </h2>
-            <div className="grid grid-cols-2 print-grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="h-[250px] border border-slate-200 rounded-lg p-2 bg-white">
                 <TicketsOverTimeChart
                   data={ticketsOverTimeData}
@@ -199,11 +185,11 @@ export function ReportDocument({
           </section>
 
           {/* Section: Analysis */}
-          <section className="break-inside-avoid">
+          <section>
             <h2 className="text-lg font-semibold mb-4 border-l-4 border-primary pl-2 uppercase tracking-wide text-slate-900">
               Análise Operacional
             </h2>
-            <div className="grid grid-cols-2 print-grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="h-[250px] border border-slate-200 rounded-lg p-2 bg-white">
                 <TopIssuesChart
                   data={topIssuesData}
@@ -228,9 +214,6 @@ export function ReportDocument({
             </div>
           </section>
 
-          {/* Page Break for Table if needed */}
-          <div className="page-break" />
-
           {/* Section: Detailed List */}
           <section>
             <h2 className="text-lg font-semibold mb-4 border-l-4 border-primary pl-2 uppercase tracking-wide text-slate-900">
@@ -243,7 +226,7 @@ export function ReportDocument({
         </div>
 
         {/* Footer */}
-        <div className="fixed bottom-0 left-0 w-full text-center py-4 border-t mt-8 bg-white print:block hidden text-xs text-slate-400">
+        <div className="w-full text-center py-4 border-t mt-8 bg-white text-xs text-slate-400">
           <p>
             Replay Suporte - Relatório Gerado Automaticamente - Confidencial
           </p>

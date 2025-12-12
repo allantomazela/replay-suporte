@@ -13,6 +13,7 @@ import { DateRange } from 'react-day-picker'
 import { subDays, isWithinInterval, format, differenceInHours } from 'date-fns'
 import { Clock, CheckCircle2, TicketIcon, Timer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { generateReportPDF } from '@/lib/pdf-utils'
 
 export default function Reports() {
   const { tickets, clients } = useAppContext()
@@ -27,6 +28,8 @@ export default function Reports() {
   const [clientFilter, setClientFilter] = useState('all')
   const [agentFilter, setAgentFilter] = useState('all')
   const [problemTypeFilter, setProblemTypeFilter] = useState('all')
+
+  const [isExporting, setIsExporting] = useState(false)
 
   // Data Filtering
   const filteredTickets = useMemo(() => {
@@ -180,15 +183,37 @@ export default function Reports() {
   }, [filteredTickets, clients])
 
   // Exports
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    setIsExporting(true)
     toast({
       title: 'Gerando PDF',
-      description: 'Preparando documento para impressão...',
+      description: 'Preparando seu relatório, aguarde um momento...',
     })
-    // Delay slightly to ensure toast renders and state stabilizes if needed
-    setTimeout(() => {
-      window.print()
-    }, 500)
+
+    try {
+      // Small delay to ensure render updates if any
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      await generateReportPDF(
+        'report-document-container',
+        `Relatorio_Atendimento_${format(new Date(), 'ddMMyyyy')}.pdf`,
+      )
+
+      toast({
+        title: 'PDF Gerado',
+        description: 'O download do seu relatório foi iniciado.',
+      })
+    } catch (error) {
+      console.error('Failed to generate PDF', error)
+      toast({
+        title: 'Erro na Exportação',
+        description:
+          'Não foi possível gerar o PDF. Tente novamente mais tarde.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const handleExportCSV = () => {
@@ -238,7 +263,7 @@ export default function Reports() {
 
   return (
     <>
-      <div className="space-y-8 animate-fade-in print:hidden">
+      <div className="space-y-8 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-bold">Relatórios de Performance</h1>
         </div>
@@ -256,6 +281,7 @@ export default function Reports() {
           setProblemTypeFilter={setProblemTypeFilter}
           onExportPDF={handleExportPDF}
           onExportCSV={handleExportCSV}
+          isExporting={isExporting}
         />
 
         <KPIStats
@@ -311,7 +337,7 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Hidden Print Document */}
+      {/* Hidden Report Document for PDF Capture */}
       <ReportDocument
         dateRange={dateRange}
         kpis={kpis}
