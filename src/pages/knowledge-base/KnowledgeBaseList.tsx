@@ -9,9 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, SlidersHorizontal, BookOpen, X } from 'lucide-react'
+import {
+  Search,
+  SlidersHorizontal,
+  BookOpen,
+  X,
+  Plus,
+  Settings,
+} from 'lucide-react'
 import { ArticleCard } from '@/components/knowledge-base/ArticleCard'
 import { Badge } from '@/components/ui/badge'
+import { Link } from 'react-router-dom'
+import { CategoryManagerDialog } from '@/components/knowledge-base/CategoryManagerDialog'
 
 export default function KnowledgeBaseList() {
   const { knowledgeArticles, knowledgeCategories } = useAppContext()
@@ -20,6 +29,9 @@ export default function KnowledgeBaseList() {
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortOption, setSortOption] = useState<string>('updated')
+
+  // Dialog State
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false)
 
   // Derived filtered/sorted articles
   const filteredArticles = useMemo(() => {
@@ -70,19 +82,35 @@ export default function KnowledgeBaseList() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg text-primary">
-            <BookOpen className="h-6 w-6" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Base de Conhecimento
+            </h1>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Base de Conhecimento
-          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Encontre guias, tutoriais e soluções para os problemas mais comuns
+            do Replay.
+          </p>
         </div>
-        <p className="text-muted-foreground text-lg max-w-2xl">
-          Encontre guias, tutoriais e soluções para os problemas mais comuns do
-          Replay.
-        </p>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => setIsCategoryManagerOpen(true)}
+            className="flex-1 md:flex-none"
+          >
+            <Settings className="mr-2 h-4 w-4" /> Categorias
+          </Button>
+          <Button asChild className="flex-1 md:flex-none">
+            <Link to="/knowledge-base/new">
+              <Plus className="mr-2 h-4 w-4" /> Novo Artigo
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card p-4 rounded-lg shadow-sm border space-y-4">
@@ -198,6 +226,11 @@ export default function KnowledgeBaseList() {
           </Button>
         </div>
       )}
+
+      <CategoryManagerDialog
+        open={isCategoryManagerOpen}
+        onOpenChange={setIsCategoryManagerOpen}
+      />
     </div>
   )
 }

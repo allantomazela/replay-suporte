@@ -53,6 +53,18 @@ interface AppContextType {
   getTicketById: (id: string) => Ticket | undefined
   getClientById: (id: string) => Client | undefined
   getArticleById: (id: string) => KnowledgeArticle | undefined
+  // Knowledge Base CRUD
+  addArticle: (
+    article: Omit<
+      KnowledgeArticle,
+      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount'
+    >,
+  ) => void
+  updateArticle: (id: string, data: Partial<KnowledgeArticle>) => void
+  deleteArticle: (id: string) => void
+  addCategory: (category: Omit<KnowledgeCategory, 'id'>) => void
+  updateCategory: (id: string, data: Partial<KnowledgeCategory>) => void
+  deleteCategory: (id: string) => void
   // Navigation Preferences
   navOrder: NavItemId[]
   navPreferences: Record<NavItemId, NavPreference>
@@ -106,22 +118,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customFields, setCustomFields] =
     useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
-  // Knowledge Base State
-  const [knowledgeArticles] = useState<KnowledgeArticle[]>(
-    MOCK_KNOWLEDGE_ARTICLES,
-  )
-  const [knowledgeCategories] = useState<KnowledgeCategory[]>(
-    MOCK_KNOWLEDGE_CATEGORIES,
-  )
+  // Knowledge Base State - Persisted in localStorage to simulate DB
+  const [knowledgeArticles, setKnowledgeArticles] = useState<
+    KnowledgeArticle[]
+  >(() => {
+    const stored = localStorage.getItem('kb-articles')
+    return stored ? JSON.parse(stored) : MOCK_KNOWLEDGE_ARTICLES
+  })
+  const [knowledgeCategories, setKnowledgeCategories] = useState<
+    KnowledgeCategory[]
+  >(() => {
+    const stored = localStorage.getItem('kb-categories')
+    return stored ? JSON.parse(stored) : MOCK_KNOWLEDGE_CATEGORIES
+  })
 
-  // Navigation State with robust initialization to ensure new menu items appear
+  // Navigation State
   const [navOrder, setNavOrder] = useState<NavItemId[]>(() => {
     const stored = localStorage.getItem('nav-order')
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
-          // Check for any missing default items (like 'knowledge-base') and append them
           const missingItems = DEFAULT_NAV_ORDER.filter(
             (id) => !parsed.includes(id),
           )
@@ -176,7 +193,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }))
   })
 
-  // Persistence
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('kb-articles', JSON.stringify(knowledgeArticles))
+  }, [knowledgeArticles])
+
+  useEffect(() => {
+    localStorage.setItem('kb-categories', JSON.stringify(knowledgeCategories))
+  }, [knowledgeCategories])
+
   useEffect(() => {
     localStorage.setItem('nav-order', JSON.stringify(navOrder))
   }, [navOrder])
@@ -200,6 +225,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }, [notificationSettings])
 
+  // Auth
   const login = (email: string) => {
     setUser({ ...MOCK_USER, email })
   }
@@ -208,6 +234,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  // Client CRUD
   const addClient = (data: Omit<Client, 'id' | 'active'>) => {
     const newClient: Client = {
       ...data,
@@ -242,6 +269,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  // Ticket CRUD
   const addTicket = (
     data: Omit<
       Ticket,
@@ -273,6 +301,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  // Knowledge Base CRUD
+  const addArticle = (
+    article: Omit<
+      KnowledgeArticle,
+      'id' | 'createdAt' | 'updatedAt' | 'views' | 'helpfulCount'
+    >,
+  ) => {
+    const newArticle: KnowledgeArticle = {
+      ...article,
+      id: `kb${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      views: 0,
+      helpfulCount: 0,
+    }
+    setKnowledgeArticles((prev) => [newArticle, ...prev])
+  }
+
+  const updateArticle = (id: string, data: Partial<KnowledgeArticle>) => {
+    setKnowledgeArticles((prev) =>
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, ...data, updatedAt: new Date().toISOString() }
+          : a,
+      ),
+    )
+  }
+
+  const deleteArticle = (id: string) => {
+    setKnowledgeArticles((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  const addCategory = (category: Omit<KnowledgeCategory, 'id'>) => {
+    const newCategory: KnowledgeCategory = {
+      ...category,
+      id: `cat${Date.now()}`,
+    }
+    setKnowledgeCategories((prev) => [...prev, newCategory])
+  }
+
+  const updateCategory = (id: string, data: Partial<KnowledgeCategory>) => {
+    setKnowledgeCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...data } : c)),
+    )
+    // Also update categoryName in articles if name changed
+    if (data.name) {
+      setKnowledgeArticles((prev) =>
+        prev.map((a) =>
+          a.categoryId === id ? { ...a, categoryName: data.name! } : a,
+        ),
+      )
+    }
+  }
+
+  const deleteCategory = (id: string) => {
+    setKnowledgeCategories((prev) => prev.filter((c) => c.id !== id))
+  }
+
+  // Navigation & Settings
   const updateNavOrder = (order: NavItemId[]) => {
     setNavOrder(order)
   }
@@ -362,6 +449,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getTicketById,
         getClientById,
         getArticleById,
+        // KB Exports
+        addArticle,
+        updateArticle,
+        deleteArticle,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        // Other Exports
         navOrder,
         navPreferences,
         updateNavOrder,

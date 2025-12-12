@@ -15,6 +15,7 @@ import PerformanceReports from './pages/PerformanceReports'
 import Profile from './pages/Profile'
 import KnowledgeBaseList from './pages/knowledge-base/KnowledgeBaseList'
 import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
+import KnowledgeBaseEditor from './pages/knowledge-base/KnowledgeBaseEditor'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -42,6 +43,14 @@ const App = () => (
               <Route path="/tickets/:id" element={<TicketDetail />} />
 
               <Route path="/knowledge-base" element={<KnowledgeBaseList />} />
+              <Route
+                path="/knowledge-base/new"
+                element={<KnowledgeBaseEditor />}
+              />
+              <Route
+                path="/knowledge-base/edit/:id"
+                element={<KnowledgeBaseEditor />}
+              />
               <Route
                 path="/knowledge-base/articles/:id"
                 element={<KnowledgeBaseDetail />}

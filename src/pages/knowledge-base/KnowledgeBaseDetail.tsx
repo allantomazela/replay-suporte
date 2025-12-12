@@ -12,14 +12,30 @@ import {
   Tag,
   Share2,
   Printer,
+  Edit,
+  Trash2,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useState } from 'react'
+import { useToast } from '@/hooks/use-toast'
 
 export default function KnowledgeBaseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getArticleById } = useAppContext()
+  const { getArticleById, deleteArticle } = useAppContext()
+  const { toast } = useToast()
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const article = id ? getArticleById(id) : undefined
 
@@ -42,9 +58,20 @@ export default function KnowledgeBaseDetail() {
     window.print()
   }
 
+  const handleDelete = () => {
+    if (id) {
+      deleteArticle(id)
+      toast({
+        title: 'Artigo Excluído',
+        description: 'O artigo foi removido com sucesso.',
+      })
+      navigate('/knowledge-base')
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <Button
           variant="ghost"
           size="sm"
@@ -55,6 +82,21 @@ export default function KnowledgeBaseDetail() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/knowledge-base/edit/${article.id}`}>
+              <Edit className="mr-2 h-4 w-4" /> Editar
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -176,6 +218,29 @@ export default function KnowledgeBaseDetail() {
           </Card>
         </div>
       </div>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Artigo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este artigo permanentemente?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
