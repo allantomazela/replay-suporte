@@ -11,12 +11,16 @@ import {
   User,
   CustomFieldDefinition,
   ArenaNotificationSetting,
+  KnowledgeArticle,
+  KnowledgeCategory,
 } from '@/types'
 import {
   MOCK_CLIENTS,
   MOCK_TICKETS,
   MOCK_USER,
   MOCK_CUSTOM_FIELDS,
+  MOCK_KNOWLEDGE_ARTICLES,
+  MOCK_KNOWLEDGE_CATEGORIES,
 } from '@/lib/mock-data'
 import { DEFAULT_NAV_ORDER, NavItemId } from '@/lib/nav-config'
 
@@ -32,6 +36,8 @@ interface AppContextType {
   user: User | null
   clients: Client[]
   tickets: Ticket[]
+  knowledgeArticles: KnowledgeArticle[]
+  knowledgeCategories: KnowledgeCategory[]
   login: (email: string) => void
   logout: () => void
   addClient: (client: Omit<Client, 'id' | 'active'>) => void
@@ -46,6 +52,7 @@ interface AppContextType {
   updateTicket: (id: string, data: Partial<Ticket>) => void
   getTicketById: (id: string) => Ticket | undefined
   getClientById: (id: string) => Client | undefined
+  getArticleById: (id: string) => KnowledgeArticle | undefined
   // Navigation Preferences
   navOrder: NavItemId[]
   navPreferences: Record<NavItemId, NavPreference>
@@ -73,6 +80,11 @@ const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
   dashboard: { id: 'dashboard', visible: true, mobileVisible: true },
   clients: { id: 'clients', visible: true, mobileVisible: true },
   tickets: { id: 'tickets', visible: true, mobileVisible: true },
+  'knowledge-base': {
+    id: 'knowledge-base',
+    visible: true,
+    mobileVisible: true,
+  },
   reports: { id: 'reports', visible: true, mobileVisible: true },
   'reports-overview': {
     id: 'reports-overview',
@@ -94,6 +106,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customFields, setCustomFields] =
     useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
+  // Knowledge Base State
+  const [knowledgeArticles] = useState<KnowledgeArticle[]>(
+    MOCK_KNOWLEDGE_ARTICLES,
+  )
+  const [knowledgeCategories] = useState<KnowledgeCategory[]>(
+    MOCK_KNOWLEDGE_CATEGORIES,
+  )
+
   // Navigation State with robust initialization to ensure new menu items appear
   const [navOrder, setNavOrder] = useState<NavItemId[]>(() => {
     const stored = localStorage.getItem('nav-order')
@@ -101,7 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
-          // Check for any missing default items (like 'reports') and append them
+          // Check for any missing default items (like 'knowledge-base') and append them
           const missingItems = DEFAULT_NAV_ORDER.filter(
             (id) => !parsed.includes(id),
           )
@@ -142,7 +162,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('notification-settings')
     if (stored) return JSON.parse(stored)
 
-    // Default initialization
     return MOCK_CLIENTS.map((client) => ({
       arenaId: client.id,
       events: {
@@ -196,7 +215,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active: true,
     }
     setClients((prev) => [...prev, newClient])
-    // Initialize notification setting for new client
     setNotificationSettings((prev) => [
       ...prev,
       {
@@ -300,7 +318,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             : s,
         )
       } else {
-        // Create if not exists (defensive)
         return [
           ...prev,
           {
@@ -324,6 +341,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getTicketById = (id: string) => tickets.find((t) => t.id === id)
   const getClientById = (id: string) => clients.find((c) => c.id === id)
+  const getArticleById = (id: string) =>
+    knowledgeArticles.find((a) => a.id === id)
 
   return (
     <AppContext.Provider
@@ -331,6 +350,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         user,
         clients,
         tickets,
+        knowledgeArticles,
+        knowledgeCategories,
         login,
         logout,
         addClient,
@@ -340,6 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateTicket,
         getTicketById,
         getClientById,
+        getArticleById,
         navOrder,
         navPreferences,
         updateNavOrder,

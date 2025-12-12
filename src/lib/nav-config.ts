@@ -7,6 +7,7 @@ import {
   LucideIcon,
   BarChart3,
   LineChart,
+  BookOpen,
 } from 'lucide-react'
 
 export type NavItemId =
@@ -17,6 +18,7 @@ export type NavItemId =
   | 'reports'
   | 'reports-overview'
   | 'reports-performance'
+  | 'knowledge-base'
 
 export interface NavItemConfig {
   id: NavItemId
@@ -44,6 +46,12 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     label: 'Atendimentos',
     path: '/tickets',
     icon: LifeBuoy,
+  },
+  'knowledge-base': {
+    id: 'knowledge-base',
+    label: 'Base de Conhecimento',
+    path: '/knowledge-base',
+    icon: BookOpen,
   },
   reports: {
     id: 'reports',
@@ -75,6 +83,7 @@ export const DEFAULT_NAV_ORDER: NavItemId[] = [
   'dashboard',
   'clients',
   'tickets',
+  'knowledge-base',
   'reports',
   'profile',
 ]

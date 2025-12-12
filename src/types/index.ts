@@ -16,7 +16,6 @@ export interface Client {
   arenaCode: string
   arenaName: string
   active: boolean
-  // New fields for User Story
   contractType?: string
   technicalManager?: string
 }
@@ -64,7 +63,6 @@ export interface AuthState {
   isLoading: boolean
 }
 
-// New Interface for Notification Settings
 export interface ArenaNotificationSetting {
   arenaId: string
   events: {
@@ -76,4 +74,26 @@ export interface ArenaNotificationSetting {
     inApp: boolean
     email: boolean
   }
+}
+
+// Knowledge Base Types
+export interface KnowledgeCategory {
+  id: string
+  name: string
+  description?: string
+}
+
+export interface KnowledgeArticle {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  categoryId: string
+  categoryName: string
+  author: string
+  createdAt: string
+  updatedAt: string
+  tags: string[]
+  views: number
+  helpfulCount: number
 }

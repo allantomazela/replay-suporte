@@ -13,6 +13,8 @@ import TicketDetail from './pages/tickets/TicketDetail'
 import Reports from './pages/Reports'
 import PerformanceReports from './pages/PerformanceReports'
 import Profile from './pages/Profile'
+import KnowledgeBaseList from './pages/knowledge-base/KnowledgeBaseList'
+import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -38,6 +40,12 @@ const App = () => (
 
               <Route path="/tickets" element={<TicketList />} />
               <Route path="/tickets/:id" element={<TicketDetail />} />
+
+              <Route path="/knowledge-base" element={<KnowledgeBaseList />} />
+              <Route
+                path="/knowledge-base/articles/:id"
+                element={<KnowledgeBaseDetail />}
+              />
 
               <Route path="/reports" element={<Reports />} />
               <Route
