@@ -16,6 +16,7 @@ import Profile from './pages/Profile'
 import KnowledgeBaseList from './pages/knowledge-base/KnowledgeBaseList'
 import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
 import KnowledgeBaseEditor from './pages/knowledge-base/KnowledgeBaseEditor'
+import SystemHealth from './pages/admin/SystemHealth'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
 import PortalLayout from './pages/portal/PortalLayout'
@@ -71,6 +72,8 @@ const App = () => (
                 path="/reports/performance"
                 element={<PerformanceReports />}
               />
+
+              <Route path="/system-health" element={<SystemHealth />} />
 
               <Route path="/profile" element={<Profile />} />
             </Route>

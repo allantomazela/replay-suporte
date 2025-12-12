@@ -130,3 +130,24 @@ export interface AppNotification {
   read: boolean
   createdAt: string
 }
+
+// Monitoring Types
+export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
+
+export interface SystemLog {
+  id: string
+  timestamp: string
+  severity: LogSeverity
+  message: string
+  source: string
+  metadata?: Record<string, any>
+}
+
+export interface SystemMetric {
+  name: string
+  value: number
+  unit: string
+  timestamp: string
+  threshold?: number
+  status: 'healthy' | 'warning' | 'critical'
+}

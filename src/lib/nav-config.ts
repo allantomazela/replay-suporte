@@ -8,6 +8,7 @@ import {
   BarChart3,
   LineChart,
   BookOpen,
+  Activity,
 } from 'lucide-react'
 
 export type NavItemId =
@@ -19,6 +20,7 @@ export type NavItemId =
   | 'reports-overview'
   | 'reports-performance'
   | 'knowledge-base'
+  | 'system-health'
 
 export interface NavItemConfig {
   id: NavItemId
@@ -26,6 +28,7 @@ export interface NavItemConfig {
   path: string
   icon: LucideIcon
   children?: NavItemId[]
+  adminOnly?: boolean
 }
 
 export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
@@ -71,6 +74,13 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     path: '/reports/performance',
     icon: LineChart,
   },
+  'system-health': {
+    id: 'system-health',
+    label: 'Monitoramento',
+    path: '/system-health',
+    icon: Activity,
+    adminOnly: true,
+  },
   profile: {
     id: 'profile',
     label: 'Perfil',
@@ -85,5 +95,6 @@ export const DEFAULT_NAV_ORDER: NavItemId[] = [
   'tickets',
   'knowledge-base',
   'reports',
+  'system-health',
   'profile',
 ]

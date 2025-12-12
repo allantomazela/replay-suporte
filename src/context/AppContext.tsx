@@ -16,6 +16,8 @@ import {
   KnowledgeArticleVersion,
   KBSubscription,
   AppNotification,
+  SystemLog,
+  LogSeverity,
 } from '@/types'
 import {
   MOCK_CLIENTS,
@@ -27,6 +29,7 @@ import {
 } from '@/lib/mock-data'
 import { DEFAULT_NAV_ORDER, NavItemId } from '@/lib/nav-config'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { logSystemEvent } from '@/lib/monitoring'
 
 export interface NavPreference {
   id: NavItemId
@@ -111,6 +114,8 @@ interface AppContextType {
     arenaId: string,
     setting: Partial<ArenaNotificationSetting>,
   ) => void
+  // Monitoring
+  logEvent: (message: string, severity?: LogSeverity, source?: string) => void
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -134,6 +139,11 @@ const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
     id: 'reports-performance',
     visible: true,
     mobileVisible: true,
+  },
+  'system-health': {
+    id: 'system-health',
+    visible: true,
+    mobileVisible: false,
   },
   profile: { id: 'profile', visible: true, mobileVisible: true },
 }
@@ -160,28 +170,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Auth State Change
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
+          // Fetch Role from profiles
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+
           setUser({
             id: session.user.id,
             name: session.user.user_metadata.full_name || session.user.email,
             email: session.user.email || '',
-            role: 'admin', // Default to admin for demo
+            role: profile?.role || 'agent', // Role-Based Access Control initialization
             avatar: session.user.user_metadata.avatar_url,
           })
+
+          logSystemEvent(`User ${session.user.email} logged in`, 'info', 'Auth')
         } else {
           setUser(null)
         }
       })
 
-      // Fetch Data
+      // Fetch Data - Optimized Queries
       const fetchData = async () => {
-        const { data: dbClients } = await supabase.from('clients').select('*')
-        if (dbClients) setClients(dbClients)
+        const start = performance.now()
 
-        const { data: dbTickets } = await supabase.from('tickets').select('*')
+        // Use select to fetch only needed fields if possible, here fetching all for context state
+        const { data: dbClients, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+        if (dbClients) setClients(dbClients)
+        if (clientError)
+          logSystemEvent('Failed to fetch clients', 'error', 'Database', {
+            error: clientError,
+          })
+
+        const { data: dbTickets, error: ticketError } = await supabase
+          .from('tickets')
+          .select('*')
         if (dbTickets) {
-          // Map db columns to internal model (snake_case -> camelCase)
           const mappedTickets = dbTickets.map((t) => ({
             ...t,
             createdAt: t.created_at,
@@ -189,6 +218,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           })) as Ticket[]
           setTickets(mappedTickets)
         }
+        if (ticketError)
+          logSystemEvent('Failed to fetch tickets', 'error', 'Database', {
+            error: ticketError,
+          })
 
         const { data: dbCats } = await supabase
           .from('knowledge_categories')
@@ -206,6 +239,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           })) as KnowledgeArticle[]
           setKnowledgeArticles(mappedArts)
         }
+
+        const end = performance.now()
+        logSystemEvent(
+          `Data refresh completed in ${(end - start).toFixed(0)}ms`,
+          'info',
+          'Performance',
+        )
       }
 
       fetchData()
@@ -324,6 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = (email: string) => {
     // If Supabase is configured, this is handled via auth UI mostly, but for mock fallback:
     setUser({ ...MOCK_USER, email })
+    logSystemEvent(`Mock login for ${email}`, 'info', 'Auth')
   }
 
   const logout = async () => {
@@ -331,6 +372,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut()
     }
     setUser(null)
+    logSystemEvent('User logged out', 'info', 'Auth')
   }
 
   // Helper to trigger notifications
@@ -341,6 +383,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Client CRUD
   const addClient = async (data: Omit<Client, 'id' | 'active'>) => {
+    // Permission check
+    if (user?.role !== 'admin' && user?.role !== 'coordinator') {
+      logSystemEvent(
+        'Unauthorized client creation attempt',
+        'warning',
+        'Security',
+      )
+      return // Or throw error
+    }
+
     const newClient: Client = {
       ...data,
       id: `c${Date.now()}`,
@@ -354,6 +406,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .single()
       if (!error && saved) {
         setClients((prev) => [...prev, saved])
+        logSystemEvent(`Client created: ${newClient.name}`, 'info', 'Data')
       }
     } else {
       setClients((prev) => [...prev, newClient])
@@ -421,6 +474,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           updatedAt: saved.updated_at,
         }
         setTickets((prev) => [mapped as any, ...prev])
+        logSystemEvent(`Ticket created: ${newTicket.id}`, 'info', 'Data')
+      } else if (error) {
+        logSystemEvent('Error creating ticket', 'error', 'Database', { error })
       }
     } else {
       // Local mock needs camelCase
@@ -444,7 +500,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const dbUpdateData = { ...data, updated_at: timestamp }
 
     if (isSupabase && supabase) {
-      await supabase.from('tickets').update(dbUpdateData).eq('id', id)
+      const { error } = await supabase
+        .from('tickets')
+        .update(dbUpdateData)
+        .eq('id', id)
+      if (error) {
+        logSystemEvent(`Error updating ticket ${id}`, 'error', 'Database', {
+          error,
+        })
+        return
+      }
       setTickets((prev) =>
         prev.map((t) => (t.id === id ? { ...t, ...updateData } : t)),
       )
@@ -769,6 +834,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const logEvent = (
+    message: string,
+    severity?: LogSeverity,
+    source?: string,
+  ) => {
+    logSystemEvent(message, severity, source)
+  }
+
   const getTicketById = (id: string) => tickets.find((t) => t.id === id)
   const getClientById = (id: string) => clients.find((c) => c.id === id)
   const getArticleById = (id: string) =>
@@ -821,6 +894,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         customFields,
         notificationSettings,
         updateNotificationSetting,
+        logEvent,
       }}
     >
       {children}
