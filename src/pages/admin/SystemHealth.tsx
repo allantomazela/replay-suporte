@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAppContext } from '@/context/AppContext'
 import {
   generateMockMetrics,
@@ -39,6 +39,26 @@ export default function SystemHealth() {
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
 
+  const fetchData = useCallback(() => {
+    setIsRefreshing(true)
+    // Simulate API call
+    setTimeout(() => {
+      setMetrics(generateMockMetrics())
+      setLogs(generateMockLogs())
+      setLastUpdate(new Date())
+      setIsRefreshing(false)
+    }, 600)
+  }, [])
+
+  useEffect(() => {
+    // Only fetch if admin
+    if (user?.role === 'admin') {
+      fetchData()
+      const interval = setInterval(fetchData, 30000) // Auto refresh every 30s
+      return () => clearInterval(interval)
+    }
+  }, [user, fetchData])
+
   // Redirect if not admin
   if (user && user.role !== 'admin') {
     return (
@@ -51,23 +71,6 @@ export default function SystemHealth() {
       </div>
     )
   }
-
-  const fetchData = () => {
-    setIsRefreshing(true)
-    // Simulate API call
-    setTimeout(() => {
-      setMetrics(generateMockMetrics())
-      setLogs(generateMockLogs())
-      setLastUpdate(new Date())
-      setIsRefreshing(false)
-    }, 600)
-  }
-
-  useEffect(() => {
-    fetchData()
-    const interval = setInterval(fetchData, 30000) // Auto refresh every 30s
-    return () => clearInterval(interval)
-  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {
