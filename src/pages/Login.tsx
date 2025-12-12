@@ -90,6 +90,9 @@ export default function Login() {
         })
         if (error) throw error
         // Success relies on useEffect [user] -> navigate
+        // We set loading to false here to ensure the UI doesn't appear frozen
+        // while waiting for the redirect or if the redirect logic has a delay.
+        setIsLoading(false)
       } catch (error: any) {
         toast({
           title: 'Erro no Login',
@@ -137,6 +140,7 @@ export default function Login() {
             description: 'Bem-vindo ao Replay Suporte!',
           })
           // useEffect will redirect
+          setIsLoading(false)
         } else if (data.user) {
           toast({
             title: 'Confirmação Necessária',
