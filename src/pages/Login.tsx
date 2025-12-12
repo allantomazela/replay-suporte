@@ -76,6 +76,51 @@ export default function Login() {
     return true
   }
 
+  const getErrorMessage = (error: any) => {
+    if (!error) return 'Ocorreu um erro desconhecido.'
+
+    const message = error.message || ''
+    const status = error.status
+
+    if (
+      message.includes('User already registered') ||
+      (status === 422 && message.toLowerCase().includes('registered'))
+    ) {
+      return 'Este email já está cadastrado. Por favor, utilize a aba "Entrar" para fazer login.'
+    }
+
+    if (message.includes('Password should be at least')) {
+      return 'A senha deve ter no mínimo 6 caracteres para garantir a segurança da sua conta.'
+    }
+
+    if (
+      message.toLowerCase().includes('weak_password') ||
+      message.includes('password is too weak')
+    ) {
+      return 'A senha escolhida é muito fraca. Tente combinar letras maiúsculas, minúsculas, números e símbolos.'
+    }
+
+    if (
+      message.includes('invalid email') ||
+      message.includes('Validation failed for email')
+    ) {
+      return 'O endereço de email informado não é válido. Verifique se digitou corretamente.'
+    }
+
+    if (status === 429) {
+      return 'Muitas tentativas consecutivas. Por favor, aguarde alguns instantes antes de tentar novamente.'
+    }
+
+    if (message.includes('Invalid login credentials')) {
+      return 'Email ou senha incorretos. Verifique suas credenciais.'
+    }
+
+    return (
+      message ||
+      'Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.'
+    )
+  }
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     if (!validateForm('login')) return
@@ -90,18 +135,14 @@ export default function Login() {
         })
         if (error) throw error
         // Success relies on useEffect [user] -> navigate
-        // We set loading to false here to ensure the UI doesn't appear frozen
-        // while waiting for the redirect or if the redirect logic has a delay.
-        setIsLoading(false)
       } catch (error: any) {
+        console.error('Login error:', error)
         toast({
           title: 'Erro no Login',
-          description:
-            error.message === 'Invalid login credentials'
-              ? 'Email ou senha incorretos.'
-              : error.message,
+          description: getErrorMessage(error),
           variant: 'destructive',
         })
+      } finally {
         setIsLoading(false)
       }
     } else {
@@ -140,21 +181,21 @@ export default function Login() {
             description: 'Bem-vindo ao Replay Suporte!',
           })
           // useEffect will redirect
-          setIsLoading(false)
         } else if (data.user) {
           toast({
             title: 'Confirmação Necessária',
             description: 'Verifique seu email para confirmar o cadastro.',
           })
           setActiveTab('login')
-          setIsLoading(false)
         }
       } catch (error: any) {
+        console.error('Registration error:', error)
         toast({
           title: 'Erro no Cadastro',
-          description: error.message,
+          description: getErrorMessage(error),
           variant: 'destructive',
         })
+      } finally {
         setIsLoading(false)
       }
     } else {
