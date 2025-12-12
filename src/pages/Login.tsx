@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
@@ -12,64 +12,158 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Loader2, UserPlus, LogIn } from 'lucide-react'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAppContext()
+  const { login: mockLogin, user } = useAppContext()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState('login')
 
-  const handleLogin = (e: FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard')
+    }
+  }, [user, navigate])
 
+  const validateForm = (type: 'login' | 'register') => {
     if (!email || !password) {
       toast({
-        title: 'Erro',
+        title: 'Campos Obrigatórios',
         description: 'Por favor, preencha todos os campos.',
         variant: 'destructive',
       })
-      setIsLoading(false)
-      return
+      return false
     }
 
-    // Use AppContext login (which might be mock or supabase depending on config)
-    setTimeout(() => {
-      login(email)
-      setIsLoading(false)
-      navigate('/dashboard')
-    }, 1500)
+    if (password.length < 6) {
+      toast({
+        title: 'Senha Fraca',
+        description: 'A senha deve ter no mínimo 6 caracteres.',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    if (type === 'register') {
+      if (!fullName) {
+        toast({
+          title: 'Nome Obrigatório',
+          description: 'Por favor, informe seu nome completo.',
+          variant: 'destructive',
+        })
+        return false
+      }
+      if (password !== confirmPassword) {
+        toast({
+          title: 'Senhas Diferentes',
+          description: 'As senhas informadas não coincidem.',
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
+    return true
   }
 
-  const handleGoogleLogin = async () => {
-    if (!supabase) {
-      toast({
-        title: 'Configuração Necessária',
-        description: 'Integre com o Supabase para habilitar o login Google.',
-        variant: 'destructive',
-      })
-      return
-    }
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!validateForm('login')) return
 
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      })
-      if (error) throw error
-    } catch (error: any) {
-      toast({
-        title: 'Erro no Login',
-        description: error.message,
-        variant: 'destructive',
-      })
+    setIsLoading(true)
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (error) throw error
+        // Success relies on useEffect [user] -> navigate
+      } catch (error: any) {
+        toast({
+          title: 'Erro no Login',
+          description:
+            error.message === 'Invalid login credentials'
+              ? 'Email ou senha incorretos.'
+              : error.message,
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+      }
+    } else {
+      // Mock Login
+      setTimeout(() => {
+        mockLogin(email)
+        setIsLoading(false)
+        // useEffect will redirect
+      }, 1500)
+    }
+  }
+
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!validateForm('register')) return
+
+    setIsLoading(true)
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { error, data } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+          },
+        })
+
+        if (error) throw error
+
+        if (data.session) {
+          toast({
+            title: 'Conta Criada',
+            description: 'Bem-vindo ao Replay Suporte!',
+          })
+          // useEffect will redirect
+        } else if (data.user) {
+          toast({
+            title: 'Confirmação Necessária',
+            description: 'Verifique seu email para confirmar o cadastro.',
+          })
+          setActiveTab('login')
+          setIsLoading(false)
+        }
+      } catch (error: any) {
+        toast({
+          title: 'Erro no Cadastro',
+          description: error.message,
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+      }
+    } else {
+      // Mock Register
+      setTimeout(() => {
+        toast({
+          title: 'Modo Mock',
+          description: 'Cadastro simulado realizado. Fazendo login...',
+        })
+        mockLogin(email)
+        setIsLoading(false)
+        // useEffect will redirect
+      }, 1500)
     }
   }
 
@@ -84,99 +178,149 @@ export default function Login() {
               </span>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">
-            Bem-vindo ao Replay Suporte
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold">Replay Suporte</CardTitle>
           <CardDescription>
-            Entre com suas credenciais para acessar o sistema.
+            Acesse o sistema de gestão de atendimento.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu.email@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full font-semibold"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                'Entrar'
-              )}
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Ou
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
             className="w-full"
-            type="button"
-            onClick={handleGoogleLogin}
           >
-            <svg
-              className="mr-2 h-4 w-4"
-              aria-hidden="true"
-              focusable="false"
-              data-prefix="fab"
-              data-icon="google"
-              role="img"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 488 512"
-            >
-              <path
-                fill="currentColor"
-                d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
-              ></path>
-            </svg>
-            Entrar com Google
-          </Button>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Entrar</TabsTrigger>
+              <TabsTrigger value="register">Cadastrar</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Senha</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" /> Entrar
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="register">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-name">Nome Completo</Label>
+                  <Input
+                    id="register-name"
+                    type="text"
+                    placeholder="Seu nome"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-email">Email</Label>
+                  <Input
+                    id="register-email"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password">Senha</Label>
+                    <Input
+                      id="register-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirmar</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" /> Cadastrar
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <a
-            href="#"
-            className="text-sm text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault()
-              toast({
-                title: 'Recuperação',
-                description: 'Verifique seu email.',
-              })
-            }}
-          >
-            Esqueceu sua senha?
-          </a>
+        <CardFooter className="flex justify-center flex-col gap-2">
+          {activeTab === 'login' && (
+            <a
+              href="#"
+              className="text-sm text-primary hover:underline"
+              onClick={(e) => {
+                e.preventDefault()
+                toast({
+                  title: 'Recuperação',
+                  description:
+                    'Se configurado, você receberá um email de recuperação.',
+                })
+              }}
+            >
+              Esqueceu sua senha?
+            </a>
+          )}
+          {!isSupabaseConfigured() && (
+            <p className="text-xs text-muted-foreground mt-4 bg-muted p-2 rounded w-full text-center">
+              ⚠️ Modo Mock (Sem Supabase)
+            </p>
+          )}
         </CardFooter>
       </Card>
     </div>
