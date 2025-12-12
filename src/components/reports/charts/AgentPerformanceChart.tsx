@@ -1,12 +1,4 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
   ChartContainer,
   ChartTooltip,
@@ -16,6 +8,7 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface AgentPerformanceChartProps {
   data: Array<{
@@ -23,6 +16,8 @@ interface AgentPerformanceChartProps {
     resolved: number
     avgTime: number
   }>
+  staticDisplay?: boolean
+  className?: string
 }
 
 const chartConfig = {
@@ -36,9 +31,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function AgentPerformanceChart({ data }: AgentPerformanceChartProps) {
+export function AgentPerformanceChart({
+  data,
+  staticDisplay = false,
+  className,
+}: AgentPerformanceChartProps) {
   return (
-    <Card className="h-full">
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle className="text-lg">Performance por Agente</CardTitle>
       </CardHeader>
@@ -54,17 +53,21 @@ export function AgentPerformanceChart({ data }: AgentPerformanceChartProps) {
                 tickMargin={10}
               />
               <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              {!staticDisplay && (
+                <ChartTooltip content={<ChartTooltipContent />} />
+              )}
               <ChartLegend content={<ChartLegendContent />} />
               <Bar
                 dataKey="resolved"
                 fill="var(--color-resolved)"
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={!staticDisplay}
               />
               <Bar
                 dataKey="avgTime"
                 fill="var(--color-avgTime)"
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={!staticDisplay}
               />
             </BarChart>
           </ChartContainer>

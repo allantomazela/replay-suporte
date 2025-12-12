@@ -6,9 +6,12 @@ import {
   ChartConfig,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface TopIssuesChartProps {
   data: Array<{ name: string; count: number }>
+  staticDisplay?: boolean
+  className?: string
 }
 
 const chartConfig = {
@@ -18,12 +21,15 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function TopIssuesChart({ data }: TopIssuesChartProps) {
-  // Sort data by count descending to show top issues first
+export function TopIssuesChart({
+  data,
+  staticDisplay = false,
+  className,
+}: TopIssuesChartProps) {
   const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 8)
 
   return (
-    <Card className="h-full">
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle className="text-lg">Top Problemas Recorrentes</CardTitle>
       </CardHeader>
@@ -45,15 +51,18 @@ export function TopIssuesChart({ data }: TopIssuesChartProps) {
                 tick={{ fontSize: 12 }}
               />
               <XAxis type="number" hide />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="line" />}
-              />
+              {!staticDisplay && (
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="line" />}
+                />
+              )}
               <Bar
                 dataKey="count"
                 fill="var(--color-count)"
                 radius={[0, 4, 4, 0]}
                 barSize={32}
+                isAnimationActive={!staticDisplay}
               >
                 <LabelList
                   dataKey="count"

@@ -1,12 +1,4 @@
-import {
-  Line,
-  LineChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
   ChartContainer,
   ChartTooltip,
@@ -14,9 +6,12 @@ import {
   ChartConfig,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface TicketsOverTimeChartProps {
   data: Array<{ date: string; count: number }>
+  staticDisplay?: boolean
+  className?: string
 }
 
 const chartConfig = {
@@ -26,9 +21,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function TicketsOverTimeChart({ data }: TicketsOverTimeChartProps) {
+export function TicketsOverTimeChart({
+  data,
+  staticDisplay = false,
+  className,
+}: TicketsOverTimeChartProps) {
   return (
-    <Card className="h-full">
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle className="text-lg">Novos Atendimentos por Dia</CardTitle>
       </CardHeader>
@@ -53,10 +52,12 @@ export function TicketsOverTimeChart({ data }: TicketsOverTimeChartProps) {
                 tickMargin={8}
                 allowDecimals={false}
               />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="line" />}
-              />
+              {!staticDisplay && (
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="line" />}
+                />
+              )}
               <Line
                 type="monotone"
                 dataKey="count"
@@ -64,6 +65,7 @@ export function TicketsOverTimeChart({ data }: TicketsOverTimeChartProps) {
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
+                isAnimationActive={!staticDisplay}
               />
             </LineChart>
           </ChartContainer>

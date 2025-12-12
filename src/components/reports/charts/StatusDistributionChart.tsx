@@ -8,9 +8,12 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface StatusDistributionChartProps {
   data: Array<{ name: string; value: number; fill: string }>
+  staticDisplay?: boolean
+  className?: string
 }
 
 const chartConfig = {
@@ -34,8 +37,9 @@ const chartConfig = {
 
 export function StatusDistributionChart({
   data,
+  staticDisplay = false,
+  className,
 }: StatusDistributionChartProps) {
-  // Ensure we use the color from the config if available for consistency
   const processedData = data.map((item) => ({
     ...item,
     fill:
@@ -45,7 +49,7 @@ export function StatusDistributionChart({
   }))
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={cn('h-full flex flex-col', className)}>
       <CardHeader>
         <CardTitle className="text-lg">Distribuição por Status</CardTitle>
       </CardHeader>
@@ -56,16 +60,19 @@ export function StatusDistributionChart({
             className="mx-auto aspect-square max-h-[250px]"
           >
             <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-              />
+              {!staticDisplay && (
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+              )}
               <Pie
                 data={processedData}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={60}
                 strokeWidth={5}
+                isAnimationActive={!staticDisplay}
               />
               <ChartLegend
                 content={<ChartLegendContent nameKey="name" />}

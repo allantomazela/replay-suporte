@@ -195,7 +195,7 @@ export function ReportFilters({
         </Button>
         <Button variant="default" size="sm" onClick={onExportPDF}>
           <Download className="mr-2 h-4 w-4" />
-          Imprimir / PDF
+          Gerar PDF
         </Button>
       </div>
     </div>

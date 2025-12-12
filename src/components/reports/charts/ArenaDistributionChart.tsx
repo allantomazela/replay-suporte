@@ -6,9 +6,12 @@ import {
   ChartConfig,
 } from '@/components/ui/chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface ArenaDistributionChartProps {
   data: Array<{ name: string; count: number }>
+  staticDisplay?: boolean
+  className?: string
 }
 
 const chartConfig = {
@@ -18,11 +21,15 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ArenaDistributionChart({ data }: ArenaDistributionChartProps) {
+export function ArenaDistributionChart({
+  data,
+  staticDisplay = false,
+  className,
+}: ArenaDistributionChartProps) {
   const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 10)
 
   return (
-    <Card className="h-full">
+    <Card className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle className="text-lg">Atendimentos por Arena</CardTitle>
       </CardHeader>
@@ -41,14 +48,17 @@ export function ArenaDistributionChart({ data }: ArenaDistributionChartProps) {
                 }
               />
               <YAxis tickLine={false} axisLine={false} />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="dashed" />}
-              />
+              {!staticDisplay && (
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dashed" />}
+                />
+              )}
               <Bar
                 dataKey="count"
                 fill="var(--color-count)"
                 radius={[4, 4, 0, 0]}
+                isAnimationActive={!staticDisplay}
               >
                 <LabelList
                   dataKey="count"
