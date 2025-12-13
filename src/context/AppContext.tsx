@@ -55,6 +55,7 @@ export interface KBPermissions {
 
 interface AppContextType {
   user: User | null
+  isLoading: boolean
   usersList: User[]
   clients: Client[]
   tickets: Ticket[]
@@ -167,6 +168,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isSupabase = isSupabaseConfigured()
 
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [usersList, setUsersList] = useState<User[]>(MOCK_USERS_LIST)
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS)
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS)
@@ -212,6 +214,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null)
         }
+        setIsLoading(false)
       })
 
       // Fetch Data - Optimized Queries
@@ -274,8 +277,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return () => subscription.unsubscribe()
     } else {
       // Fallback to local storage persistence logic for mocks
+      const storedUser = localStorage.getItem('mock-user')
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser))
+        } catch (e) {
+          console.error('Failed to restore mock user', e)
+        }
+      }
+
       const storedArticles = localStorage.getItem('kb-articles')
       if (storedArticles) setKnowledgeArticles(JSON.parse(storedArticles))
+
+      setIsLoading(false)
     }
   }, [isSupabase])
 
@@ -395,6 +409,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       name: email.split('@')[0],
     }
     setUser(mockUser)
+
+    if (!isSupabase) {
+      localStorage.setItem('mock-user', JSON.stringify(mockUser))
+    }
+
     logSystemEvent(`Mock login for ${email}`, 'info', 'Auth')
   }
 
@@ -403,6 +422,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut()
     }
     setUser(null)
+
+    if (!isSupabase) {
+      localStorage.removeItem('mock-user')
+    }
+
     logSystemEvent('User logged out', 'info', 'Auth')
   }
 
@@ -928,6 +952,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         user,
+        isLoading,
         usersList,
         clients,
         tickets,

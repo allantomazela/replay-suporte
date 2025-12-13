@@ -3,10 +3,19 @@ import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { useAppContext } from '@/context/AppContext'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { Loader2 } from 'lucide-react'
 
 export default function Layout() {
-  const { user } = useAppContext()
+  const { user, isLoading } = useAppContext()
   const location = useLocation()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+      </div>
+    )
+  }
 
   if (!user && location.pathname !== '/login') {
     return <Navigate to="/login" replace />

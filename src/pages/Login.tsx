@@ -27,10 +27,10 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLocalLoading, setIsLocalLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  const { login: mockLogin, user } = useAppContext()
+  const { login: mockLogin, user, isLoading: isGlobalLoading } = useAppContext()
   const navigate = useNavigate()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('login')
@@ -45,10 +45,10 @@ export default function Login() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (!isGlobalLoading && user) {
       navigate('/dashboard', { replace: true })
     }
-  }, [user, navigate])
+  }, [user, navigate, isGlobalLoading])
 
   const validateForm = (type: 'login' | 'register') => {
     if (!email || !password) {
@@ -154,7 +154,7 @@ export default function Login() {
     setAuthError(null)
     if (!validateForm('login')) return
 
-    setIsLoading(true)
+    setIsLocalLoading(true)
     let success = false
 
     if (isSupabaseConfigured() && supabase) {
@@ -170,7 +170,7 @@ export default function Login() {
           description: msg,
           variant: 'destructive',
         })
-        setIsLoading(false)
+        setIsLocalLoading(false)
         return
       }
 
@@ -210,7 +210,7 @@ export default function Login() {
           title: 'Login realizado com sucesso',
           description: 'Redirecionando para o dashboard...',
         })
-        // useEffect will redirect when user state updates
+        // useEffect will redirect when user state updates via context
       } catch (error: any) {
         console.error('Login error:', error)
 
@@ -228,7 +228,7 @@ export default function Login() {
       } finally {
         // Only stop loading if we failed. If success, keep loading until redirect happens.
         if (isMounted.current && !success) {
-          setIsLoading(false)
+          setIsLocalLoading(false)
         }
       }
     } else {
@@ -251,7 +251,7 @@ export default function Login() {
     setAuthError(null)
     if (!validateForm('register')) return
 
-    setIsLoading(true)
+    setIsLocalLoading(true)
     let success = false
 
     if (isSupabaseConfigured() && supabase) {
@@ -300,7 +300,7 @@ export default function Login() {
         })
       } finally {
         if (isMounted.current && !success) {
-          setIsLoading(false)
+          setIsLocalLoading(false)
         }
       }
     } else {
@@ -316,6 +316,15 @@ export default function Login() {
         }
       }, 1000)
     }
+  }
+
+  // If global loading is true, we can show a simple spinner to prevent flash
+  if (isGlobalLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary/10">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -385,9 +394,9 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full font-semibold"
-                  disabled={isLoading}
+                  disabled={isLocalLoading}
                 >
-                  {isLoading ? (
+                  {isLocalLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <>
@@ -453,9 +462,9 @@ export default function Login() {
                 <Button
                   type="submit"
                   className="w-full font-semibold"
-                  disabled={isLoading}
+                  disabled={isLocalLoading}
                 >
-                  {isLoading ? (
+                  {isLocalLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <>
