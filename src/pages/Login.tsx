@@ -15,7 +15,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, UserPlus, LogIn, AlertCircle } from 'lucide-react'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import {
+  supabase,
+  isSupabaseConfigured,
+  getActiveSupabaseUrl,
+} from '@/lib/supabase'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function Login() {
@@ -154,9 +158,7 @@ export default function Login() {
 
     if (isSupabaseConfigured() && supabase) {
       // Verification of Supabase URL Configuration
-      const localUrl = localStorage.getItem('supabase_url')
-      const envUrl = import.meta.env.VITE_SUPABASE_URL
-      const urlToCheck = localUrl || envUrl
+      const urlToCheck = getActiveSupabaseUrl()
 
       if (urlToCheck && !urlToCheck.startsWith('http')) {
         const msg =
@@ -209,6 +211,11 @@ export default function Login() {
         // useEffect will redirect when user state updates
       } catch (error: any) {
         console.error('Login error:', error)
+
+        // Force sign out to ensure clean state if timeout or error occurred
+        // This prevents race conditions where a slow request succeeds after timeout
+        await supabase.auth.signOut()
+
         const friendlyMessage = getErrorMessage(error)
         setAuthError(friendlyMessage)
         toast({

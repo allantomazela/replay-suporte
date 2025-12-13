@@ -1,19 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Try to get config from env vars first, then localStorage
+// Get config with priority: localStorage > env vars
+// This allows the "Supabase Integration" feature to override env vars
 const getSupabaseConfig = () => {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
   const localUrl = localStorage.getItem('supabase_url')
   const localKey = localStorage.getItem('supabase_key')
 
-  if (envUrl && envKey) {
-    return { url: envUrl, key: envKey, type: 'env' }
-  }
-
   if (localUrl && localKey) {
     return { url: localUrl, key: localKey, type: 'local' }
+  }
+
+  const envUrl = import.meta.env.VITE_SUPABASE_URL
+  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+  if (envUrl && envKey) {
+    return { url: envUrl, key: envKey, type: 'env' }
   }
 
   return null
@@ -24,6 +25,8 @@ const config = getSupabaseConfig()
 export const supabase = config ? createClient(config.url, config.key) : null
 
 export const isSupabaseConfigured = () => !!supabase
+
+export const getActiveSupabaseUrl = () => config?.url || ''
 
 export const saveSupabaseConfig = (url: string, key: string) => {
   localStorage.setItem('supabase_url', url)
@@ -41,12 +44,25 @@ export const clearSupabaseConfig = () => {
 export const checkSupabaseConnection = async () => {
   if (!supabase) return false
   try {
+    // Just a simple query to check connectivity
+    // Using from('clients') might fail with RLS if not logged in, but we check for network error
     const { error } = await supabase
       .from('clients')
       .select('count', { count: 'exact', head: true })
-    // If table doesn't exist, we might get a 404 or specific error, but connection to Supabase itself worked if we got a response.
-    // However, usually we want to verify auth.
-    return !error || error.code === 'PGRST116' // PGRST116 is no rows, which is fine
+
+    // If we get an error, check if it's a connectivity error vs permission error
+    // If it's permission error (401/403), connection is ALIVE.
+    // If "Failed to fetch", connection is DEAD.
+    if (
+      error &&
+      (error.message.includes('Failed to fetch') || error.code === '500')
+    ) {
+      return false
+    }
+
+    // PGRST116 means no rows returned (head: true with no rows?), mostly if table empty or no access
+    // But if connection fails we get fetch error above.
+    return true
   } catch (e) {
     return false
   }
