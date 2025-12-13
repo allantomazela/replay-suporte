@@ -46,7 +46,7 @@ export default function Login() {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      navigate('/dashboard', { replace: true })
     }
   }, [user, navigate])
 
@@ -155,6 +155,7 @@ export default function Login() {
     if (!validateForm('login')) return
 
     setIsLoading(true)
+    let success = false
 
     if (isSupabaseConfigured() && supabase) {
       // Verification of Supabase URL Configuration
@@ -204,6 +205,7 @@ export default function Login() {
           )
         }
 
+        success = true
         toast({
           title: 'Login realizado com sucesso',
           description: 'Redirecionando para o dashboard...',
@@ -224,7 +226,8 @@ export default function Login() {
           variant: 'destructive',
         })
       } finally {
-        if (isMounted.current) {
+        // Only stop loading if we failed. If success, keep loading until redirect happens.
+        if (isMounted.current && !success) {
           setIsLoading(false)
         }
       }
@@ -233,7 +236,7 @@ export default function Login() {
       setTimeout(() => {
         if (isMounted.current) {
           mockLogin(email)
-          setIsLoading(false)
+          // Keep loading true as mockLogin sets user synchronously and we'll redirect immediately
           toast({
             title: 'Modo Demo',
             description: 'Login simulado realizado com sucesso.',
@@ -249,6 +252,7 @@ export default function Login() {
     if (!validateForm('register')) return
 
     setIsLoading(true)
+    let success = false
 
     if (isSupabaseConfigured() && supabase) {
       try {
@@ -272,6 +276,7 @@ export default function Login() {
         if (error) throw error
 
         if (data.session) {
+          success = true
           toast({
             title: 'Conta Criada',
             description: 'Bem-vindo ao Replay Suporte!',
@@ -294,7 +299,7 @@ export default function Login() {
           variant: 'destructive',
         })
       } finally {
-        if (isMounted.current) {
+        if (isMounted.current && !success) {
           setIsLoading(false)
         }
       }
@@ -307,7 +312,7 @@ export default function Login() {
             description: 'Cadastro simulado realizado. Fazendo login...',
           })
           mockLogin(email)
-          setIsLoading(false)
+          // Keep loading as we'll redirect
         }
       }, 1000)
     }
