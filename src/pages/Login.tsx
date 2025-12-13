@@ -14,8 +14,9 @@ import {
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, UserPlus, LogIn } from 'lucide-react'
+import { Loader2, UserPlus, LogIn, AlertCircle } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -23,6 +24,8 @@ export default function Login() {
   const [fullName, setFullName] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+
   const { login: mockLogin, user } = useAppContext()
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -87,7 +90,8 @@ export default function Login() {
   const getErrorMessage = (error: any) => {
     if (!error) return 'Ocorreu um erro desconhecido.'
 
-    const message = error.message || ''
+    // Prefer message if it's a string, otherwise fallback
+    const message = typeof error === 'string' ? error : error.message || ''
     const status = error.status
 
     if (message === 'TIMEOUT') {
@@ -124,7 +128,11 @@ export default function Login() {
     }
 
     if (message.includes('Invalid login credentials')) {
-      return 'Email ou senha incorretos. Verifique suas credenciais.'
+      return 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.'
+    }
+
+    if (message.includes('Email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.'
     }
 
     if (message.includes('Failed to fetch')) {
@@ -139,6 +147,7 @@ export default function Login() {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
+    setAuthError(null)
     if (!validateForm('login')) return
 
     setIsLoading(true)
@@ -149,12 +158,13 @@ export default function Login() {
       const envUrl = import.meta.env.VITE_SUPABASE_URL
       const urlToCheck = localUrl || envUrl
 
-      // Check if URL is present and looks valid (starts with http)
       if (urlToCheck && !urlToCheck.startsWith('http')) {
+        const msg =
+          'A URL do Supabase parece incorreta. Verifique as configurações.'
+        setAuthError(msg)
         toast({
           title: 'Configuração Inválida',
-          description:
-            'A URL do Supabase parece incorreta. Verifique as configurações.',
+          description: msg,
           variant: 'destructive',
         })
         setIsLoading(false)
@@ -163,7 +173,7 @@ export default function Login() {
 
       try {
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT')), 10000) // 10 seconds timeout
+          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
         })
 
         const loginPromise = supabase.auth.signInWithPassword({
@@ -172,15 +182,38 @@ export default function Login() {
         })
 
         const result: any = await Promise.race([loginPromise, timeoutPromise])
-        const { error } = result
+        const { data, error } = result
 
         if (error) throw error
-        // Success relies on useEffect [user] -> navigate
+
+        if (!data.session) {
+          throw new Error('Sessão não pôde ser estabelecida. Tente novamente.')
+        }
+
+        // Validate session explicitly before declaring success
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession()
+
+        if (sessionError || !sessionData.session) {
+          // Force sign out if session validation fails to prevent partial state
+          await supabase.auth.signOut()
+          throw new Error(
+            'Falha na validação da sessão. Por favor, faça login novamente.',
+          )
+        }
+
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Redirecionando para o dashboard...',
+        })
+        // useEffect will redirect when user state updates
       } catch (error: any) {
         console.error('Login error:', error)
+        const friendlyMessage = getErrorMessage(error)
+        setAuthError(friendlyMessage)
         toast({
           title: 'Erro no Login',
-          description: getErrorMessage(error),
+          description: friendlyMessage,
           variant: 'destructive',
         })
       } finally {
@@ -194,14 +227,18 @@ export default function Login() {
         if (isMounted.current) {
           mockLogin(email)
           setIsLoading(false)
+          toast({
+            title: 'Modo Demo',
+            description: 'Login simulado realizado com sucesso.',
+          })
         }
-        // useEffect will redirect
-      }, 1500)
+      }, 1000)
     }
   }
 
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault()
+    setAuthError(null)
     if (!validateForm('register')) return
 
     setIsLoading(true)
@@ -209,7 +246,7 @@ export default function Login() {
     if (isSupabaseConfigured() && supabase) {
       try {
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
         })
 
         const signUpPromise = supabase.auth.signUp({
@@ -242,9 +279,11 @@ export default function Login() {
         }
       } catch (error: any) {
         console.error('Registration error:', error)
+        const friendlyMessage = getErrorMessage(error)
+        setAuthError(friendlyMessage)
         toast({
           title: 'Erro no Cadastro',
-          description: getErrorMessage(error),
+          description: friendlyMessage,
           variant: 'destructive',
         })
       } finally {
@@ -263,8 +302,7 @@ export default function Login() {
           mockLogin(email)
           setIsLoading(false)
         }
-        // useEffect will redirect
-      }, 1500)
+      }, 1000)
     }
   }
 
@@ -287,13 +325,24 @@ export default function Login() {
         <CardContent>
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={(val) => {
+              setActiveTab(val)
+              setAuthError(null)
+            }}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Entrar</TabsTrigger>
               <TabsTrigger value="register">Cadastrar</TabsTrigger>
             </TabsList>
+
+            {authError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro</AlertTitle>
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
@@ -306,6 +355,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -317,6 +367,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                   />
                 </div>
                 <Button
@@ -346,6 +397,7 @@ export default function Login() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
+                    autoComplete="name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -357,6 +409,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -369,6 +422,7 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      autoComplete="new-password"
                     />
                   </div>
                   <div className="space-y-2">
@@ -380,6 +434,7 @@ export default function Login() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
