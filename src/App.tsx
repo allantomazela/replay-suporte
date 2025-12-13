@@ -25,10 +25,9 @@ import PortalLayout from './pages/portal/PortalLayout'
 import PortalHome from './pages/portal/PortalHome'
 import PortalArticle from './pages/portal/PortalArticle'
 
-// App component with Provider wrapper
 const App = () => (
   <BrowserRouter
-    future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
+    future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
   >
     <ThemeProvider defaultTheme="system" storageKey="replay-ui-theme">
       <AppProvider>

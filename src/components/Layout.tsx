@@ -9,6 +9,7 @@ export default function Layout() {
   const { user, isLoading } = useAppContext()
   const location = useLocation()
 
+  // Ensure loading state blocks everything to prevent premature redirects
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -17,13 +18,12 @@ export default function Layout() {
     )
   }
 
-  if (!user && location.pathname !== '/login') {
-    return <Navigate to="/login" replace />
-  }
-
-  // If we are on login page, we render the Outlet directly without layout
-  if (location.pathname === '/login') {
-    return <Outlet />
+  // Strictly redirect if not authenticated and not on public paths
+  // Note: Layout is usually used for protected routes, so we enforce auth here.
+  if (!user) {
+    // Preserve the location user tried to access for redirection after login if needed
+    // For now, simple redirect
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   return (

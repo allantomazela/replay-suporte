@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +32,7 @@ export default function Login() {
 
   const { login: mockLogin, user, isLoading: isGlobalLoading } = useAppContext()
   const navigate = useNavigate()
+  const location = useLocation()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('login')
   const isMounted = useRef(true)
@@ -43,12 +44,15 @@ export default function Login() {
     }
   }, [])
 
-  // Redirect if user is already logged in
+  // Robust redirection logic:
+  // Only redirect if global loading is done AND user is present.
   useEffect(() => {
     if (!isGlobalLoading && user) {
-      navigate('/dashboard', { replace: true })
+      // Check for redirect path in location state, default to /dashboard
+      const from = (location.state as any)?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
     }
-  }, [user, navigate, isGlobalLoading])
+  }, [user, navigate, isGlobalLoading, location])
 
   const validateForm = (type: 'login' | 'register') => {
     if (!email || !password) {
@@ -91,74 +95,14 @@ export default function Login() {
     return true
   }
 
-  const getErrorMessage = (error: any) => {
-    if (!error) return 'Ocorreu um erro desconhecido.'
-
-    // Prefer message if it's a string, otherwise fallback
-    const message = typeof error === 'string' ? error : error.message || ''
-    const status = error.status
-
-    if (message === 'TIMEOUT') {
-      return 'A conexão demorou muito para responder. Verifique sua internet ou tente novamente.'
-    }
-
-    if (
-      message.includes('User already registered') ||
-      (status === 422 && message.toLowerCase().includes('registered'))
-    ) {
-      return 'Este email já está cadastrado. Por favor, utilize a aba "Entrar" para fazer login.'
-    }
-
-    if (message.includes('Password should be at least')) {
-      return 'A senha deve ter no mínimo 6 caracteres para garantir a segurança da sua conta.'
-    }
-
-    if (
-      message.toLowerCase().includes('weak_password') ||
-      message.includes('password is too weak')
-    ) {
-      return 'A senha escolhida é muito fraca. Tente combinar letras maiúsculas, minúsculas, números e símbolos.'
-    }
-
-    if (
-      message.includes('invalid email') ||
-      message.includes('Validation failed for email')
-    ) {
-      return 'O endereço de email informado não é válido. Verifique se digitou corretamente.'
-    }
-
-    if (status === 429) {
-      return 'Muitas tentativas consecutivas. Por favor, aguarde alguns instantes antes de tentar novamente.'
-    }
-
-    if (message.includes('Invalid login credentials')) {
-      return 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.'
-    }
-
-    if (message.includes('Email not confirmed')) {
-      return 'Email não confirmado. Verifique sua caixa de entrada.'
-    }
-
-    if (message.includes('Failed to fetch')) {
-      return 'Não foi possível conectar ao servidor. Verifique a URL do Supabase ou sua conexão.'
-    }
-
-    return (
-      message ||
-      'Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.'
-    )
-  }
-
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     setAuthError(null)
     if (!validateForm('login')) return
 
     setIsLocalLoading(true)
-    let success = false
 
     if (isSupabaseConfigured() && supabase) {
-      // Verification of Supabase URL Configuration
       const urlToCheck = getActiveSupabaseUrl()
 
       if (urlToCheck && !urlToCheck.startsWith('http')) {
@@ -175,17 +119,10 @@ export default function Login() {
       }
 
       try {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-        })
-
-        const loginPromise = supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
-
-        const result: any = await Promise.race([loginPromise, timeoutPromise])
-        const { data, error } = result
 
         if (error) throw error
 
@@ -198,51 +135,36 @@ export default function Login() {
           await supabase.auth.getSession()
 
         if (sessionError || !sessionData.session) {
-          // Force sign out if session validation fails to prevent partial state
           await supabase.auth.signOut()
           throw new Error(
             'Falha na validação da sessão. Por favor, faça login novamente.',
           )
         }
 
-        success = true
         toast({
           title: 'Login realizado com sucesso',
           description: 'Redirecionando para o dashboard...',
         })
-        // useEffect will redirect when user state updates via context
+
+        // Navigation is handled by useEffect when user state updates in Context
       } catch (error: any) {
         console.error('Login error:', error)
-
-        // Force sign out to ensure clean state if timeout or error occurred
-        // This prevents race conditions where a slow request succeeds after timeout
         await supabase.auth.signOut()
-
-        const friendlyMessage = getErrorMessage(error)
-        setAuthError(friendlyMessage)
-        toast({
-          title: 'Erro no Login',
-          description: friendlyMessage,
-          variant: 'destructive',
-        })
-      } finally {
-        // Only stop loading if we failed. If success, keep loading until redirect happens.
-        if (isMounted.current && !success) {
-          setIsLocalLoading(false)
-        }
+        setAuthError(error.message || 'Erro ao realizar login.')
+        setIsLocalLoading(false)
       }
     } else {
       // Mock Login
       setTimeout(() => {
         if (isMounted.current) {
           mockLogin(email)
-          // Keep loading true as mockLogin sets user synchronously and we'll redirect immediately
           toast({
             title: 'Modo Demo',
             description: 'Login simulado realizado com sucesso.',
           })
+          // Keep local loading true until redirect happens
         }
-      }, 1000)
+      }, 800)
     }
   }
 
@@ -252,15 +174,10 @@ export default function Login() {
     if (!validateForm('register')) return
 
     setIsLocalLoading(true)
-    let success = false
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-        })
-
-        const signUpPromise = supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -270,38 +187,25 @@ export default function Login() {
           },
         })
 
-        const result: any = await Promise.race([signUpPromise, timeoutPromise])
-        const { error, data } = result
-
         if (error) throw error
 
         if (data.session) {
-          success = true
           toast({
             title: 'Conta Criada',
             description: 'Bem-vindo ao Replay Suporte!',
           })
-          // useEffect will redirect
         } else if (data.user) {
           toast({
             title: 'Confirmação Necessária',
             description: 'Verifique seu email para confirmar o cadastro.',
           })
           setActiveTab('login')
+          setIsLocalLoading(false)
         }
       } catch (error: any) {
         console.error('Registration error:', error)
-        const friendlyMessage = getErrorMessage(error)
-        setAuthError(friendlyMessage)
-        toast({
-          title: 'Erro no Cadastro',
-          description: friendlyMessage,
-          variant: 'destructive',
-        })
-      } finally {
-        if (isMounted.current && !success) {
-          setIsLocalLoading(false)
-        }
+        setAuthError(error.message || 'Erro no cadastro.')
+        setIsLocalLoading(false)
       }
     } else {
       // Mock Register
@@ -312,13 +216,11 @@ export default function Login() {
             description: 'Cadastro simulado realizado. Fazendo login...',
           })
           mockLogin(email)
-          // Keep loading as we'll redirect
         }
-      }, 1000)
+      }, 800)
     }
   }
 
-  // If global loading is true, we can show a simple spinner to prevent flash
   if (isGlobalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-primary/10">
@@ -477,22 +379,6 @@ export default function Login() {
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center flex-col gap-2">
-          {activeTab === 'login' && (
-            <a
-              href="#"
-              className="text-sm text-primary hover:underline"
-              onClick={(e) => {
-                e.preventDefault()
-                toast({
-                  title: 'Recuperação',
-                  description:
-                    'Se configurado, você receberá um email de recuperação.',
-                })
-              }}
-            >
-              Esqueceu sua senha?
-            </a>
-          )}
           {!isSupabaseConfigured() && (
             <p className="text-xs text-muted-foreground mt-4 bg-muted p-2 rounded w-full text-center">
               ⚠️ Modo Mock (Sem Supabase)

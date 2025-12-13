@@ -19,7 +19,8 @@ export default function Dashboard() {
   const { tickets } = useAppContext()
   const [filter, setFilter] = useState<'all' | 'today' | 'week'>('all')
   const [filteredTickets, setFilteredTickets] = useState(tickets)
-  const [isLoading, setIsLoading] = useState(false)
+  // Removed internal loading state as it is handled by global AppContext
+  // and dashboard should show content immediately if data is available
 
   // Metrics
   const totalTickets = tickets.length
@@ -30,19 +31,13 @@ export default function Dashboard() {
   const resolvedTickets = tickets.filter((t) => t.status === 'Resolvido').length
 
   useEffect(() => {
-    // Simulate real-time update
-    setIsLoading(true)
-    const timer = setTimeout(() => {
-      let res = tickets
-      if (filter === 'today') {
-        const today = new Date().toISOString().split('T')[0]
-        res = tickets.filter((t) => t.createdAt.startsWith(today))
-      }
-      // Simplified logic for week
-      setFilteredTickets(res)
-      setIsLoading(false)
-    }, 300)
-    return () => clearTimeout(timer)
+    let res = tickets
+    if (filter === 'today') {
+      const today = new Date().toISOString().split('T')[0]
+      res = tickets.filter((t) => t.createdAt.startsWith(today))
+    }
+    // Simplified logic for week could be added here
+    setFilteredTickets(res)
   }, [tickets, filter])
 
   const MetricCard = ({
@@ -62,12 +57,7 @@ export default function Dashboard() {
         </div>
       </CardHeader>
       <CardContent>
-        <div
-          className={cn(
-            'text-2xl font-bold text-foreground',
-            isLoading ? 'opacity-50' : 'animate-fade-in',
-          )}
-        >
+        <div className="text-2xl font-bold text-foreground animate-fade-in">
           {value}
         </div>
       </CardContent>
@@ -75,7 +65,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Dashboard
