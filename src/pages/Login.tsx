@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, FormEvent, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,14 @@ export default function Login() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('login')
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -82,6 +90,10 @@ export default function Login() {
     const message = error.message || ''
     const status = error.status
 
+    if (message === 'TIMEOUT') {
+      return 'A conexão demorou muito para responder. Verifique sua internet ou tente novamente.'
+    }
+
     if (
       message.includes('User already registered') ||
       (status === 422 && message.toLowerCase().includes('registered'))
@@ -115,6 +127,10 @@ export default function Login() {
       return 'Email ou senha incorretos. Verifique suas credenciais.'
     }
 
+    if (message.includes('Failed to fetch')) {
+      return 'Não foi possível conectar ao servidor. Verifique a URL do Supabase ou sua conexão.'
+    }
+
     return (
       message ||
       'Ocorreu um erro ao processar sua solicitação. Tente novamente mais tarde.'
@@ -128,11 +144,36 @@ export default function Login() {
     setIsLoading(true)
 
     if (isSupabaseConfigured() && supabase) {
+      // Verification of Supabase URL Configuration
+      const localUrl = localStorage.getItem('supabase_url')
+      const envUrl = import.meta.env.VITE_SUPABASE_URL
+      const urlToCheck = localUrl || envUrl
+
+      // Check if URL is present and looks valid (starts with http)
+      if (urlToCheck && !urlToCheck.startsWith('http')) {
+        toast({
+          title: 'Configuração Inválida',
+          description:
+            'A URL do Supabase parece incorreta. Verifique as configurações.',
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+        return
+      }
+
       try {
-        const { error } = await supabase.auth.signInWithPassword({
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), 10000) // 10 seconds timeout
+        })
+
+        const loginPromise = supabase.auth.signInWithPassword({
           email,
           password,
         })
+
+        const result: any = await Promise.race([loginPromise, timeoutPromise])
+        const { error } = result
+
         if (error) throw error
         // Success relies on useEffect [user] -> navigate
       } catch (error: any) {
@@ -143,13 +184,17 @@ export default function Login() {
           variant: 'destructive',
         })
       } finally {
-        setIsLoading(false)
+        if (isMounted.current) {
+          setIsLoading(false)
+        }
       }
     } else {
       // Mock Login
       setTimeout(() => {
-        mockLogin(email)
-        setIsLoading(false)
+        if (isMounted.current) {
+          mockLogin(email)
+          setIsLoading(false)
+        }
         // useEffect will redirect
       }, 1500)
     }
@@ -163,7 +208,11 @@ export default function Login() {
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const { error, data } = await supabase.auth.signUp({
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+        })
+
+        const signUpPromise = supabase.auth.signUp({
           email,
           password,
           options: {
@@ -172,6 +221,9 @@ export default function Login() {
             },
           },
         })
+
+        const result: any = await Promise.race([signUpPromise, timeoutPromise])
+        const { error, data } = result
 
         if (error) throw error
 
@@ -196,17 +248,21 @@ export default function Login() {
           variant: 'destructive',
         })
       } finally {
-        setIsLoading(false)
+        if (isMounted.current) {
+          setIsLoading(false)
+        }
       }
     } else {
       // Mock Register
       setTimeout(() => {
-        toast({
-          title: 'Modo Mock',
-          description: 'Cadastro simulado realizado. Fazendo login...',
-        })
-        mockLogin(email)
-        setIsLoading(false)
+        if (isMounted.current) {
+          toast({
+            title: 'Modo Mock',
+            description: 'Cadastro simulado realizado. Fazendo login...',
+          })
+          mockLogin(email)
+          setIsLoading(false)
+        }
         // useEffect will redirect
       }, 1500)
     }
