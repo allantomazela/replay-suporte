@@ -17,6 +17,8 @@ import KnowledgeBaseList from './pages/knowledge-base/KnowledgeBaseList'
 import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
 import KnowledgeBaseEditor from './pages/knowledge-base/KnowledgeBaseEditor'
 import SystemHealth from './pages/admin/SystemHealth'
+import UserList from './pages/admin/UserList'
+import TechnicianList from './pages/technicians/TechnicianList'
 import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
 import PortalLayout from './pages/portal/PortalLayout'
@@ -74,6 +76,8 @@ const App = () => (
               />
 
               <Route path="/system-health" element={<SystemHealth />} />
+              <Route path="/users" element={<UserList />} />
+              <Route path="/technicians" element={<TechnicianList />} />
 
               <Route path="/profile" element={<Profile />} />
             </Route>

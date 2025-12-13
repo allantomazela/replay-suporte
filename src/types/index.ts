@@ -151,3 +151,12 @@ export interface SystemMetric {
   threshold?: number
   status: 'healthy' | 'warning' | 'critical'
 }
+
+export interface Technician {
+  id: string
+  name: string
+  email: string
+  phone: string
+  specialties: string[]
+  active: boolean
+}

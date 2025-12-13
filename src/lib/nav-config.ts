@@ -9,7 +9,10 @@ import {
   LineChart,
   BookOpen,
   Activity,
+  Users,
+  HardHat,
 } from 'lucide-react'
+import { UserRole } from '@/types'
 
 export type NavItemId =
   | 'dashboard'
@@ -21,6 +24,8 @@ export type NavItemId =
   | 'reports-performance'
   | 'knowledge-base'
   | 'system-health'
+  | 'users'
+  | 'technicians'
 
 export interface NavItemConfig {
   id: NavItemId
@@ -29,6 +34,7 @@ export interface NavItemConfig {
   icon: LucideIcon
   children?: NavItemId[]
   adminOnly?: boolean
+  allowedRoles?: UserRole[]
 }
 
 export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
@@ -80,6 +86,21 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
     path: '/system-health',
     icon: Activity,
     adminOnly: true,
+    allowedRoles: ['admin'],
+  },
+  users: {
+    id: 'users',
+    label: 'Usuários',
+    path: '/users',
+    icon: Users,
+    allowedRoles: ['admin'],
+  },
+  technicians: {
+    id: 'technicians',
+    label: 'Técnicos',
+    path: '/technicians',
+    icon: HardHat,
+    allowedRoles: ['admin', 'coordinator'],
   },
   profile: {
     id: 'profile',
@@ -93,6 +114,8 @@ export const DEFAULT_NAV_ORDER: NavItemId[] = [
   'dashboard',
   'clients',
   'tickets',
+  'technicians',
+  'users',
   'knowledge-base',
   'reports',
   'system-health',

@@ -77,6 +77,20 @@ export function Sidebar() {
   }) => {
     if (!item) return null
 
+    // Check Roles
+    if (
+      item.allowedRoles &&
+      user?.role &&
+      !item.allowedRoles.includes(user.role)
+    ) {
+      return null
+    }
+
+    // Deprecated adminOnly check fallback
+    if (item.adminOnly && user?.role !== 'admin') {
+      return null
+    }
+
     const prefs = navPreferences[item.id]
     if (!prefs?.visible) return null
     if (isMobile && !prefs?.mobileVisible) return null
@@ -231,7 +245,7 @@ export function Sidebar() {
                         {user?.name}
                       </span>
                       <span className="truncate text-xs text-muted-foreground capitalize">
-                        {user?.role === 'admin' ? 'Administrador' : 'Agente'}
+                        {user?.role === 'admin' ? 'Administrador' : user?.role}
                       </span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />

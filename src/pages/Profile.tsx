@@ -14,8 +14,11 @@ import {
   Trash2,
   FileText,
   Tag,
+  Upload,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useRef } from 'react'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Profile() {
   const {
@@ -25,9 +28,36 @@ export default function Profile() {
     updateNotificationSetting,
     subscriptions,
     unsubscribe,
+    updateUserProfileImage,
   } = useAppContext()
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!user) return null
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'A imagem deve ter no máximo 5MB.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        updateUserProfileImage(reader.result as string)
+        toast({
+          title: 'Foto Atualizada',
+          description: 'Sua foto de perfil foi atualizada com sucesso.',
+        })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -47,22 +77,49 @@ export default function Profile() {
         <TabsContent value="general" className="mt-6">
           <Card>
             <CardHeader className="pb-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.avatar} />
-                  <AvatarFallback className="text-2xl">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="flex items-center gap-6">
+                <div className="relative group cursor-pointer">
+                  <Avatar className="h-24 w-24 border-2 border-border">
+                    <AvatarImage src={user.avatar} className="object-cover" />
+                    <AvatarFallback className="text-3xl">
+                      {user.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div
+                    className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="text-white h-6 w-6" />
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/jpg"
+                    onChange={handleImageUpload}
+                  />
+                </div>
                 <div>
                   <CardTitle className="text-2xl">{user.name}</CardTitle>
-                  <p className="text-muted-foreground">
-                    {user.role === 'admin'
-                      ? 'Administrador'
-                      : user.role === 'agent'
-                        ? 'Agente de Suporte'
-                        : 'Coordenador'}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-muted-foreground capitalize">
+                      {user.role === 'admin'
+                        ? 'Administrador'
+                        : user.role === 'agent'
+                          ? 'Agente de Suporte'
+                          : user.role === 'coordinator'
+                            ? 'Coordenador'
+                            : 'Cliente'}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Alterar Foto
+                  </Button>
                 </div>
               </div>
             </CardHeader>

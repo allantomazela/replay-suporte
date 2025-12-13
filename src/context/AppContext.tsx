@@ -18,6 +18,8 @@ import {
   AppNotification,
   SystemLog,
   LogSeverity,
+  Technician,
+  UserRole,
 } from '@/types'
 import {
   MOCK_CLIENTS,
@@ -26,6 +28,8 @@ import {
   MOCK_CUSTOM_FIELDS,
   MOCK_KNOWLEDGE_ARTICLES,
   MOCK_KNOWLEDGE_CATEGORIES,
+  MOCK_TECHNICIANS,
+  MOCK_USERS_LIST,
 } from '@/lib/mock-data'
 import { DEFAULT_NAV_ORDER, NavItemId } from '@/lib/nav-config'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -51,8 +55,10 @@ export interface KBPermissions {
 
 interface AppContextType {
   user: User | null
+  usersList: User[]
   clients: Client[]
   tickets: Ticket[]
+  technicians: Technician[]
   knowledgeArticles: KnowledgeArticle[]
   knowledgeCategories: KnowledgeCategory[]
   login: (email: string) => void
@@ -70,6 +76,13 @@ interface AppContextType {
   getTicketById: (id: string) => Ticket | undefined
   getClientById: (id: string) => Client | undefined
   getArticleById: (id: string) => KnowledgeArticle | undefined
+  // User Management
+  updateUserRole: (id: string, role: UserRole) => void
+  updateUserProfileImage: (imageUrl: string) => void
+  // Technician Management
+  addTechnician: (technician: Omit<Technician, 'id'>) => void
+  updateTechnician: (id: string, data: Partial<Technician>) => void
+  toggleTechnicianStatus: (id: string) => void
   // Knowledge Base CRUD
   addArticle: (
     article: Omit<
@@ -145,6 +158,8 @@ const DEFAULT_PREFERENCES: Record<NavItemId, NavPreference> = {
     visible: true,
     mobileVisible: false,
   },
+  users: { id: 'users', visible: true, mobileVisible: false },
+  technicians: { id: 'technicians', visible: true, mobileVisible: false },
   profile: { id: 'profile', visible: true, mobileVisible: true },
 }
 
@@ -152,8 +167,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isSupabase = isSupabaseConfigured()
 
   const [user, setUser] = useState<User | null>(null)
+  const [usersList, setUsersList] = useState<User[]>(MOCK_USERS_LIST)
   const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS)
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS)
+  const [technicians, setTechnicians] = useState<Technician[]>(MOCK_TECHNICIANS)
   const [customFields] = useState<CustomFieldDefinition[]>(MOCK_CUSTOM_FIELDS)
 
   // Knowledge Base State
@@ -179,11 +196,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             .eq('id', session.user.id)
             .single()
 
+          // Check if it's the super admin email
+          const isAdminEmail = session.user.email === 'allantomazela@gamail.com'
+          const role = isAdminEmail ? 'admin' : profile?.role || 'agent'
+
           setUser({
             id: session.user.id,
             name: session.user.user_metadata.full_name || session.user.email,
             email: session.user.email || '',
-            role: profile?.role || 'agent', // Role-Based Access Control initialization
+            role: role, // Role-Based Access Control initialization
             avatar: session.user.user_metadata.avatar_url,
           })
 
@@ -363,7 +384,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Auth
   const login = (email: string) => {
     // If Supabase is configured, this is handled via auth UI mostly, but for mock fallback:
-    setUser({ ...MOCK_USER, email })
+    // Check if it's the specific admin email
+    const isAdmin = email === 'allantomazela@gamail.com'
+    const role = isAdmin ? 'admin' : 'agent'
+
+    const mockUser = {
+      ...MOCK_USER,
+      email,
+      role: role as UserRole,
+      name: email.split('@')[0],
+    }
+    setUser(mockUser)
     logSystemEvent(`Mock login for ${email}`, 'info', 'Auth')
   }
 
@@ -379,6 +410,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const notifySubscribers = (article: KnowledgeArticle) => {
     if (!user) return
     // ... logic same as before (local for now)
+  }
+
+  // User Management
+  const updateUserRole = (id: string, role: UserRole) => {
+    // Update local state for mock
+    setUsersList((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)))
+    // If updating self, update current user state
+    if (user && user.id === id) {
+      setUser({ ...user, role })
+    }
+    // If supabase, update profile
+    if (isSupabase && supabase) {
+      supabase.from('profiles').update({ role }).eq('id', id)
+    }
+  }
+
+  const updateUserProfileImage = (imageUrl: string) => {
+    if (user) {
+      setUser({ ...user, avatar: imageUrl })
+      // Update in users list as well
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, avatar: imageUrl } : u)),
+      )
+      // Supabase storage logic would go here
+    }
   }
 
   // Client CRUD
@@ -439,6 +495,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
       )
     }
+  }
+
+  // Technician Management
+  const addTechnician = (data: Omit<Technician, 'id'>) => {
+    const newTechnician: Technician = {
+      ...data,
+      id: `tech-${Date.now()}`,
+    }
+    setTechnicians((prev) => [...prev, newTechnician])
+  }
+
+  const updateTechnician = (id: string, data: Partial<Technician>) => {
+    setTechnicians((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...data } : t)),
+    )
+  }
+
+  const toggleTechnicianStatus = (id: string) => {
+    setTechnicians((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, active: !t.active } : t)),
+    )
   }
 
   // Ticket CRUD
@@ -851,8 +928,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         user,
+        usersList,
         clients,
         tickets,
+        technicians,
         knowledgeArticles,
         knowledgeCategories,
         login,
@@ -865,6 +944,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getTicketById,
         getClientById,
         getArticleById,
+        // User Management
+        updateUserRole,
+        updateUserProfileImage,
+        // Technician Management
+        addTechnician,
+        updateTechnician,
+        toggleTechnicianStatus,
         // KB Exports
         addArticle,
         updateArticle,

@@ -5,6 +5,7 @@ import {
   CustomFieldDefinition,
   KnowledgeArticle,
   KnowledgeCategory,
+  Technician,
 } from '@/types'
 import { subDays, subHours } from 'date-fns'
 
@@ -15,6 +16,64 @@ export const MOCK_USER: User = {
   role: 'admin',
   avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=1',
 }
+
+export const MOCK_USERS_LIST: User[] = [
+  {
+    id: 'u1',
+    name: 'Ana Silva',
+    email: 'ana.silva@replaysports.com',
+    role: 'admin',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=1',
+  },
+  {
+    id: 'u2',
+    name: 'Carlos Mendes',
+    email: 'carlos.mendes@replaysports.com',
+    role: 'coordinator',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
+  },
+  {
+    id: 'u3',
+    name: 'Beatriz Lima',
+    email: 'beatriz.lima@replaysports.com',
+    role: 'agent',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
+  },
+  {
+    id: 'u4',
+    name: 'Allan Tomazela',
+    email: 'allantomazela@gamail.com',
+    role: 'admin',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=4',
+  },
+]
+
+export const MOCK_TECHNICIANS: Technician[] = [
+  {
+    id: 'tech1',
+    name: 'Roberto Carlos',
+    email: 'roberto.carlos@tech.com',
+    phone: '(11) 91234-5678',
+    specialties: ['Redes', 'Cabeamento'],
+    active: true,
+  },
+  {
+    id: 'tech2',
+    name: 'Marcos Assunção',
+    email: 'marcos.assuncao@tech.com',
+    phone: '(11) 98765-4321',
+    specialties: ['Hardware', 'Servidores'],
+    active: true,
+  },
+  {
+    id: 'tech3',
+    name: 'Juninho P.',
+    email: 'juninho@tech.com',
+    phone: '(21) 95555-4444',
+    specialties: ['Software', 'Configuração'],
+    active: true,
+  },
+]
 
 export const MOCK_CLIENTS: Client[] = [
   {
@@ -97,12 +156,6 @@ export const MOCK_CUSTOM_FIELDS: CustomFieldDefinition[] = [
 
 const generateMockTickets = (): Ticket[] => {
   const tickets: Ticket[] = []
-  // ... generating logic similar to original but shortened for brevity as logic is same
-  // Keeping original mock generation logic here would be verbose, so I'll assume it's same structure
-  // For the sake of this file update, I will replicate the original array structure but with limited items to save space
-  // in a real scenario I would copy the full generation logic.
-  // Re-implementing the loop to ensure consistency with original context provided.
-
   const statuses = ['Aberto', 'Em Andamento', 'Resolvido', 'Pendente'] as const
   const agents = [
     { id: 'u1', name: 'Ana Silva' },
