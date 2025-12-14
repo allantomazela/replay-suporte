@@ -58,7 +58,10 @@ export default function Login() {
       let from = (location.state as any)?.from?.pathname || '/dashboard'
       if (from === '/login') from = '/dashboard'
 
-      navigate(from, { replace: true })
+      // Prevent redundant navigation if already there
+      if (location.pathname !== from) {
+        navigate(from, { replace: true })
+      }
     }
   }, [user, navigate, isGlobalLoading, location])
 
@@ -146,9 +149,11 @@ export default function Login() {
           description: 'Redirecionando para o dashboard...',
         })
 
-        // Navigation is handled by useEffect when user state updates in Context
+        // Immediate navigation for robustness
+        navigate('/dashboard', { replace: true })
       } catch (error: any) {
         console.error('Login error:', error)
+        // Ensure sign out on error to clean state
         await supabase.auth.signOut()
         setAuthError(error.message || 'Erro ao realizar login.')
         setIsLocalLoading(false)
@@ -162,7 +167,8 @@ export default function Login() {
             title: 'Modo Demo',
             description: 'Login simulado realizado com sucesso.',
           })
-          // Keep local loading true until redirect happens
+          // Force navigate
+          navigate('/dashboard', { replace: true })
         }
       }, 800)
     }
@@ -195,6 +201,7 @@ export default function Login() {
             title: 'Conta Criada',
             description: 'Bem-vindo ao Replay Suporte!',
           })
+          navigate('/dashboard', { replace: true })
         } else if (data.user) {
           toast({
             title: 'Confirmação Necessária',
@@ -217,11 +224,14 @@ export default function Login() {
             description: 'Cadastro simulado realizado. Fazendo login...',
           })
           mockLogin(email)
+          navigate('/dashboard', { replace: true })
         }
       }, 800)
     }
   }
 
+  // Show a loading screen only if global loading is true AND we don't have a user yet
+  // If we have a user, the useEffect will handle redirect, so we can show loading or nothing
   if (isGlobalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-primary/10">

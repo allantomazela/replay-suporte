@@ -257,7 +257,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Explicit session check for Login to call
   const checkSession = useCallback(async () => {
-    if (!isSupabase || !supabase) return
+    if (!isSupabase || !supabase) {
+      setUser(null)
+      return
+    }
 
     try {
       const {
@@ -267,7 +270,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const userData = await handleSession(session.user)
         if (userData) {
           setUser(userData)
-          await refreshData()
+          // Don't await data refresh for session check to be fast, unless essential
+          refreshData().catch((e) =>
+            console.error('Background data refresh failed', e),
+          )
         }
       } else {
         setUser(null)

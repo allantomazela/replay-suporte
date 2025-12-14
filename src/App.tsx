@@ -26,24 +26,45 @@ import PortalHome from './pages/portal/PortalHome'
 import PortalArticle from './pages/portal/PortalArticle'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useEffect } from 'react'
+import Index from './pages/Index'
 
 const AppContent = () => {
   // Global error handling for 3rd party scripts issues and unhandled promises
   useEffect(() => {
+    const shouldSuppressError = (msg: string) => {
+      const lowerMsg = msg.toLowerCase()
+      return (
+        lowerMsg.includes('message channel closed') ||
+        lowerMsg.includes('fbevents') ||
+        lowerMsg.includes('blocked_by_client') ||
+        lowerMsg.includes('resizeobserver') ||
+        lowerMsg.includes('script error')
+      )
+    }
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      // Suppress specific errors that shouldn't break the app
-      if (
-        event.reason?.message?.includes('message channel closed') ||
-        event.reason?.message?.includes('fbevents') ||
-        event.reason?.toString().includes('ERR_BLOCKED_BY_CLIENT')
-      ) {
+      const reason = event.reason?.message || event.reason?.toString() || ''
+      if (shouldSuppressError(reason)) {
         event.preventDefault()
+        console.debug('Suppressed unhandled rejection:', reason)
+      }
+    }
+
+    const handleError = (event: ErrorEvent) => {
+      const msg = event.message || ''
+      if (shouldSuppressError(msg)) {
+        event.preventDefault()
+        console.debug('Suppressed global error:', msg)
       }
     }
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection)
-    return () =>
+    window.addEventListener('error', handleError, true) // Capture phase to catch resource errors
+
+    return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      window.removeEventListener('error', handleError, true)
+    }
   }, [])
 
   return (
@@ -58,7 +79,7 @@ const AppContent = () => {
 
       {/* App Routes (Private) */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path="/clients" element={<ClientList />} />
