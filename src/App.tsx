@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -77,9 +77,11 @@ const AppContent = () => {
         <Route path="article/:id" element={<PortalArticle />} />
       </Route>
 
+      {/* Initial Route - Independent check outside Layout */}
+      <Route path="/" element={<Index />} />
+
       {/* App Routes (Private) */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path="/clients" element={<ClientList />} />

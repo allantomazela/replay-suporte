@@ -12,8 +12,13 @@ export default function Layout() {
   // Ensure loading state blocks everything to prevent premature redirects
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin h-10 w-10 text-primary" />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Verificando acesso...
+          </p>
+        </div>
       </div>
     )
   }
