@@ -112,7 +112,7 @@ interface AppContextType {
   updateIconSet: (set: IconSetType) => void
   customIcons: Record<string, string>
   uploadCustomIcon: (id: string, url: string) => void
-  resetCustomIcon: (id: string) => void
+  resetCustomIcon: (id: string, url: string) => void
   customFields: CustomFieldDefinition[]
   notificationSettings: ArenaNotificationSetting[]
   updateNotificationSetting: (
@@ -120,6 +120,7 @@ interface AppContextType {
     setting: Partial<ArenaNotificationSetting>,
   ) => void
   logEvent: (message: string, severity?: LogSeverity, source?: string) => void
+  checkSession: () => Promise<void>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -254,6 +255,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Explicit session check for Login to call
+  const checkSession = useCallback(async () => {
+    if (!isSupabase || !supabase) return
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (session?.user) {
+        const userData = await handleSession(session.user)
+        if (userData) {
+          setUser(userData)
+          await refreshData()
+        }
+      } else {
+        setUser(null)
+      }
+    } catch (e) {
+      console.error('Session check failed', e)
+      setUser(null)
+    }
+  }, [isSupabase, handleSession, refreshData])
+
   // Initialization Effect
   useEffect(() => {
     let mounted = true
@@ -273,7 +297,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (mounted && userData) {
               setUser(userData)
               // Only fetch data if we have a user
-              refreshData()
+              await refreshData()
             }
           } else if (mounted) {
             setUser(null)
@@ -309,18 +333,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isSupabase && supabase) {
       const { data } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          // We only care about explicit sign in/out events to avoid redundant state updates
-          // INITIAL_SESSION is handled by getSession() above for robustness
+          console.log(`Auth event: ${event}`)
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             if (session?.user) {
               const userData = await handleSession(session.user)
               setUser(userData)
-              if (event === 'SIGNED_IN') refreshData()
+              if (event === 'SIGNED_IN') await refreshData()
             }
           } else if (event === 'SIGNED_OUT') {
             setUser(null)
             setTickets([])
-            // Keep clients/articles if public? For now clear sensitive data logic is implicit by redirect
           }
         },
       )
@@ -403,7 +425,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }))
   })
 
-  // Persistence Effects (Only for non-Supabase data or preferences)
+  // Persistence Effects
   useEffect(() => {
     localStorage.setItem('kb-subscriptions', JSON.stringify(subscriptions))
   }, [subscriptions])
@@ -437,7 +459,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Auth Actions
   const login = (email: string) => {
-    // Determine role based on email for mock
     const isAdmin = email === 'allantomazela@gamail.com'
     const role = isAdmin ? 'admin' : 'agent'
 
@@ -466,8 +487,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setIsLoading(false)
   }
-
-  // Other Actions ... (keeping existing implementation for actions)
 
   // User Management
   const updateUserRole = (id: string, role: UserRole) => {
@@ -712,7 +731,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await supabase.from('knowledge_articles').update(dbUpdate).eq('id', id)
     }
 
-    // Optimistic UI update
     setKnowledgeArticles((prev) =>
       prev.map((a) =>
         a.id === id ? { ...a, ...data, updatedAt: timestamp } : a,
@@ -739,7 +757,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             })
             .eq('id', articleId)
         }
-        // Local update handled by refreshing or optimistic update
         setKnowledgeArticles((prev) =>
           prev.map((a) =>
             a.id === articleId
@@ -953,6 +970,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         notificationSettings,
         updateNotificationSetting,
         logEvent,
+        checkSession,
       }}
     >
       {children}

@@ -19,10 +19,7 @@ export default function Layout() {
   }
 
   // Strictly redirect if not authenticated and not on public paths
-  // Note: Layout is usually used for protected routes, so we enforce auth here.
   if (!user) {
-    // Preserve the location user tried to access for redirection after login if needed
-    // For now, simple redirect
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 

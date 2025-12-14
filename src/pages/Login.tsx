@@ -30,7 +30,12 @@ export default function Login() {
   const [isLocalLoading, setIsLocalLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  const { login: mockLogin, user, isLoading: isGlobalLoading } = useAppContext()
+  const {
+    login: mockLogin,
+    user,
+    isLoading: isGlobalLoading,
+    checkSession,
+  } = useAppContext()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
@@ -49,7 +54,10 @@ export default function Login() {
   useEffect(() => {
     if (!isGlobalLoading && user) {
       // Check for redirect path in location state, default to /dashboard
-      const from = (location.state as any)?.from?.pathname || '/dashboard'
+      // Ensure we don't redirect to /login creating a loop
+      let from = (location.state as any)?.from?.pathname || '/dashboard'
+      if (from === '/login') from = '/dashboard'
+
       navigate(from, { replace: true })
     }
   }, [user, navigate, isGlobalLoading, location])
@@ -130,16 +138,8 @@ export default function Login() {
           throw new Error('Sessão não pôde ser estabelecida. Tente novamente.')
         }
 
-        // Validate session explicitly before declaring success
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession()
-
-        if (sessionError || !sessionData.session) {
-          await supabase.auth.signOut()
-          throw new Error(
-            'Falha na validação da sessão. Por favor, faça login novamente.',
-          )
-        }
+        // Trigger context update manually to ensure race conditions don't stall redirection
+        await checkSession()
 
         toast({
           title: 'Login realizado com sucesso',
@@ -190,6 +190,7 @@ export default function Login() {
         if (error) throw error
 
         if (data.session) {
+          await checkSession()
           toast({
             title: 'Conta Criada',
             description: 'Bem-vindo ao Replay Suporte!',
