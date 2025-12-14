@@ -43,16 +43,20 @@ export default function Login() {
 
   // Redirection effect: If user is authenticated, redirect to dashboard or original destination
   useEffect(() => {
+    // Only proceed if global loading is finished and user is present
     if (!isGlobalLoading && user) {
       // Determine where to redirect
       // Check for redirect path in location state
       const state = location.state as { from?: { pathname: string } } | null
       let targetPath = state?.from?.pathname || '/dashboard'
 
-      // Prevent redirect loop if the target is login page itself
-      if (targetPath === '/login') {
+      // Prevent redirect loop if the target is login page itself or root
+      // This ensures we always land on a protected route or dashboard
+      if (targetPath === '/login' || targetPath === '/') {
         targetPath = '/dashboard'
       }
+
+      console.debug(`Redirecting authenticated user to: ${targetPath}`)
 
       // Perform redirection using replace to avoid history stack buildup
       navigate(targetPath, { replace: true })
@@ -220,6 +224,7 @@ export default function Login() {
 
   // Loading State (Global or if User is already present and redirection is pending)
   // This prevents the login form from flashing if the user is already logged in
+  // And fulfills requirement: "The /login page must not be displayed to an authenticated user."
   if (isGlobalLoading || user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-primary/10">
