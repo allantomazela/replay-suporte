@@ -23,7 +23,8 @@ export default function Layout() {
     )
   }
 
-  // Strictly redirect if not authenticated and not on public paths
+  // Strictly redirect if not authenticated
+  // We pass the current location in state so login page knows where to redirect back
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }

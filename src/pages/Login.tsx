@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, useRef } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
@@ -40,30 +40,24 @@ export default function Login() {
   const location = useLocation()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('login')
-  const isMounted = useRef(true)
 
-  useEffect(() => {
-    isMounted.current = true
-    return () => {
-      isMounted.current = false
-    }
-  }, [])
-
-  // Robust redirection logic:
-  // Only redirect if global loading is done AND user is present.
+  // Redirection effect: If user is authenticated, redirect to dashboard or original destination
   useEffect(() => {
     if (!isGlobalLoading && user) {
-      // Check for redirect path in location state, default to /dashboard
-      // Ensure we don't redirect to /login creating a loop
-      let from = (location.state as any)?.from?.pathname || '/dashboard'
-      if (from === '/login') from = '/dashboard'
+      // Determine where to redirect
+      // Check for redirect path in location state
+      const state = location.state as { from?: { pathname: string } } | null
+      let targetPath = state?.from?.pathname || '/dashboard'
 
-      // Prevent redundant navigation if already there
-      if (location.pathname !== from) {
-        navigate(from, { replace: true })
+      // Prevent redirect loop if the target is login page itself
+      if (targetPath === '/login') {
+        targetPath = '/dashboard'
       }
+
+      // Perform redirection using replace to avoid history stack buildup
+      navigate(targetPath, { replace: true })
     }
-  }, [user, navigate, isGlobalLoading, location])
+  }, [user, isGlobalLoading, navigate, location])
 
   const validateForm = (type: 'login' | 'register') => {
     if (!email || !password) {
@@ -141,16 +135,15 @@ export default function Login() {
           throw new Error('Sessão não pôde ser estabelecida. Tente novamente.')
         }
 
-        // Trigger context update manually to ensure race conditions don't stall redirection
+        // Trigger context update manually to ensure state is updated before redirect logic kicks in
         await checkSession()
 
         toast({
           title: 'Login realizado com sucesso',
-          description: 'Redirecionando para o dashboard...',
+          description: 'Redirecionando...',
         })
 
-        // Immediate navigation for robustness
-        navigate('/dashboard', { replace: true })
+        // We do NOT set isLocalLoading to false here to keep the spinner active until redirect happens
       } catch (error: any) {
         console.error('Login error:', error)
         // Ensure sign out on error to clean state
@@ -161,15 +154,12 @@ export default function Login() {
     } else {
       // Mock Login
       setTimeout(() => {
-        if (isMounted.current) {
-          mockLogin(email)
-          toast({
-            title: 'Modo Demo',
-            description: 'Login simulado realizado com sucesso.',
-          })
-          // Force navigate
-          navigate('/dashboard', { replace: true })
-        }
+        mockLogin(email)
+        toast({
+          title: 'Modo Demo',
+          description: 'Login simulado realizado com sucesso.',
+        })
+        // State update triggers redirect in useEffect
       }, 800)
     }
   }
@@ -201,7 +191,7 @@ export default function Login() {
             title: 'Conta Criada',
             description: 'Bem-vindo ao Replay Suporte!',
           })
-          navigate('/dashboard', { replace: true })
+          // Redirect handled by useEffect
         } else if (data.user) {
           toast({
             title: 'Confirmação Necessária',
@@ -218,31 +208,32 @@ export default function Login() {
     } else {
       // Mock Register
       setTimeout(() => {
-        if (isMounted.current) {
-          toast({
-            title: 'Modo Mock',
-            description: 'Cadastro simulado realizado. Fazendo login...',
-          })
-          mockLogin(email)
-          navigate('/dashboard', { replace: true })
-        }
+        toast({
+          title: 'Modo Mock',
+          description: 'Cadastro simulado realizado. Fazendo login...',
+        })
+        mockLogin(email)
+        // Redirect handled by useEffect
       }, 800)
     }
   }
 
-  // Show a loading screen only if global loading is true AND we don't have a user yet
-  // If we have a user, the useEffect will handle redirect, so we can show loading or nothing
-  if (isGlobalLoading) {
+  // Loading State (Global or if User is already present and redirection is pending)
+  // This prevents the login form from flashing if the user is already logged in
+  if (isGlobalLoading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-primary/10">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-primary/10">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground animate-pulse">
+          {user ? 'Redirecionando...' : 'Carregando...'}
+        </p>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-primary/10 p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+      <Card className="w-full max-w-md shadow-lg border-0 animate-fade-in">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center mb-2">
             <div className="bg-primary p-3 rounded-lg">
@@ -290,6 +281,7 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
+                    disabled={isLocalLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -302,6 +294,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
+                    disabled={isLocalLoading}
                   />
                 </div>
                 <Button
@@ -332,6 +325,7 @@ export default function Login() {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     autoComplete="name"
+                    disabled={isLocalLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -344,6 +338,7 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
+                    disabled={isLocalLoading}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -357,6 +352,7 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="new-password"
+                      disabled={isLocalLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -369,6 +365,7 @@ export default function Login() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       autoComplete="new-password"
+                      disabled={isLocalLoading}
                     />
                   </div>
                 </div>
