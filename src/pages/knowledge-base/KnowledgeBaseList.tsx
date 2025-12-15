@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useAppContext } from '@/context/AppContext'
+import { usePagination } from '@/hooks/use-pagination'
+import { Pagination } from '@/components/ui/pagination'
+import { useDebounce } from '@/hooks/use-debounce'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -56,6 +59,7 @@ export default function KnowledgeBaseList() {
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [sortOption, setSortOption] = useState<string>('updated_desc')
 
@@ -75,7 +79,7 @@ export default function KnowledgeBaseList() {
     return knowledgeArticles
       .filter((article) => {
         // Advanced Search Filter (Title, Excerpt, Content, Tags)
-        const searchLower = searchTerm.toLowerCase()
+        const searchLower = debouncedSearchTerm.toLowerCase()
         const matchesSearch =
           article.title.toLowerCase().includes(searchLower) ||
           article.excerpt.toLowerCase().includes(searchLower) ||
@@ -118,7 +122,16 @@ export default function KnowledgeBaseList() {
             return 0
         }
       })
-  }, [knowledgeArticles, searchTerm, selectedCategories, sortOption])
+  }, [knowledgeArticles, debouncedSearchTerm, selectedCategories, sortOption])
+
+  // Paginação
+  const {
+    paginatedData: paginatedArticles,
+    currentPage,
+    totalPages,
+    goToPage,
+    totalItems,
+  } = usePagination(filteredArticles, { pageSize: 20 })
 
   const handleResetFilters = () => {
     setSearchTerm('')
@@ -356,12 +369,28 @@ export default function KnowledgeBaseList() {
       </div>
 
       {/* Articles Grid */}
-      {filteredArticles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+      {paginatedArticles.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedArticles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {paginatedArticles.length} de {totalItems} artigos
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+              />
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg bg-muted/10 border-dashed">
           <div className="bg-muted p-4 rounded-full mb-4">

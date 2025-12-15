@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Ticket } from '@/types'
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,7 +33,7 @@ const COLUMNS: { id: string; label: string; bgClass: string }[] = [
   },
 ]
 
-export function TicketKanban({ tickets, onEdit }: TicketKanbanProps) {
+export const TicketKanban = memo(function TicketKanban({ tickets, onEdit }: TicketKanbanProps) {
   const { clients } = useAppContext()
 
   const getClientDetails = (clientId: string) =>
@@ -133,4 +134,4 @@ export function TicketKanban({ tickets, onEdit }: TicketKanbanProps) {
       })}
     </div>
   )
-}
+})

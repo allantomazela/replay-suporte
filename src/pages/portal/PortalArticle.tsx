@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { sanitizeHTML } from '@/lib/sanitize'
 
 export default function PortalArticle() {
   const { id } = useParams<{ id: string }>()
@@ -57,7 +58,7 @@ export default function PortalArticle() {
 
       <Card className="border-none shadow-none">
         <CardContent className="p-0 prose prose-slate max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(article.content) }} />
         </CardContent>
       </Card>
     </div>

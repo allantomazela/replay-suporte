@@ -53,6 +53,40 @@ export function SupabaseWizard({ open, onOpenChange }: SupabaseWizardProps) {
       })
       return
     }
+
+    // Validação básica de URL
+    try {
+      const parsedUrl = new URL(url)
+      if (!parsedUrl.hostname.endsWith('.supabase.co') && 
+          parsedUrl.hostname !== 'localhost' && 
+          !parsedUrl.hostname.startsWith('192.168.') &&
+          !parsedUrl.hostname.startsWith('10.')) {
+        toast({
+          title: 'URL Inválida',
+          description: 'A URL deve ser um domínio Supabase válido (.supabase.co)',
+          variant: 'destructive',
+        })
+        return
+      }
+    } catch {
+      toast({
+        title: 'URL Inválida',
+        description: 'A URL fornecida não é válida.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validação básica da chave
+    if (key.length < 50 || (!key.startsWith('eyJ') && !key.startsWith('sb_'))) {
+      toast({
+        title: 'Chave Inválida',
+        description: 'A chave anon fornecida não parece ser válida.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     saveSupabaseConfig(url, key)
     toast({
       title: 'Configuração Salva',

@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Client } from '@/types'
 import { useEffect } from 'react'
 import { useAppContext } from '@/context/AppContext'
+import { useToast } from '@/hooks/use-toast'
 
 const clientSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -47,6 +48,7 @@ export function ClientFormDialog({
   client,
 }: ClientFormDialogProps) {
   const { addClient, updateClient } = useAppContext()
+  const { toast } = useToast()
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
@@ -78,13 +80,30 @@ export function ClientFormDialog({
     }
   }, [client, form, open])
 
-  const onSubmit = (values: ClientFormValues) => {
-    if (client) {
-      updateClient(client.id, values)
-    } else {
-      addClient(values)
+  const onSubmit = async (values: ClientFormValues) => {
+    try {
+      if (client) {
+        await updateClient(client.id, values)
+        toast({
+          title: 'Cliente atualizado',
+          description: 'As informações do cliente foram atualizadas com sucesso.',
+        })
+      } else {
+        await addClient(values)
+        toast({
+          title: 'Cliente cadastrado',
+          description: 'O cliente foi cadastrado com sucesso.',
+        })
+      }
+      onOpenChange(false)
+    } catch (error: any) {
+      console.error('Error saving client:', error)
+      toast({
+        title: 'Erro ao salvar',
+        description: error.message || 'Não foi possível salvar o cliente. Verifique suas permissões.',
+        variant: 'destructive',
+      })
     }
-    onOpenChange(false)
   }
 
   return (

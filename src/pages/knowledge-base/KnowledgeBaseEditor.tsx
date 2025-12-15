@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/form'
 import { Card, CardContent } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
+import { sanitizeHTML } from '@/lib/sanitize'
 
 const articleSchema = z.object({
   title: z.string().min(5, 'O título deve ter pelo menos 5 caracteres'),
@@ -122,8 +123,10 @@ export default function KnowledgeBaseEditor() {
             .filter(Boolean)
         : []
 
+      // Sanitiza o conteúdo antes de extrair texto e salvar
+      const sanitizedContent = sanitizeHTML(values.content)
       const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = values.content
+      tempDiv.innerHTML = sanitizedContent
       const plainText = tempDiv.textContent || tempDiv.innerText || ''
       const excerpt =
         plainText.slice(0, 150) + (plainText.length > 150 ? '...' : '')
@@ -133,7 +136,7 @@ export default function KnowledgeBaseEditor() {
           title: values.title,
           categoryId: values.categoryId,
           categoryName: category?.name || 'Geral',
-          content: values.content,
+          content: sanitizedContent,
           excerpt,
           tags: tagsArray,
           isPublic: values.isPublic,
@@ -148,7 +151,7 @@ export default function KnowledgeBaseEditor() {
           title: values.title,
           categoryId: values.categoryId,
           categoryName: category?.name || 'Geral',
-          content: values.content,
+          content: sanitizedContent,
           excerpt,
           tags: tagsArray,
           author: user?.name || 'Sistema',

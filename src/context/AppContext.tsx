@@ -6,6 +6,7 @@ import {
   useEffect,
   useCallback,
 } from 'react'
+import { useRealtime } from '@/hooks/use-realtime'
 import {
   Client,
   Ticket,
@@ -65,7 +66,7 @@ interface AppContextType {
   logout: () => void
   addClient: (client: Omit<Client, 'id' | 'active'>) => void
   updateClient: (id: string, data: Partial<Client>) => void
-  toggleClientStatus: (id: string) => void
+  toggleClientStatus: (id: string) => Promise<void>
   addTicket: (
     ticket: Omit<
       Ticket,
@@ -77,7 +78,8 @@ interface AppContextType {
   getClientById: (id: string) => Client | undefined
   getArticleById: (id: string) => KnowledgeArticle | undefined
   updateUserRole: (id: string, role: UserRole) => void
-  updateUserProfileImage: (imageUrl: string) => void
+  updateUserProfileImage: (imageUrl: string) => Promise<void>
+  updateUserProfile: (data: { name?: string; avatar?: string }) => Promise<void>
   addTechnician: (technician: Omit<Technician, 'id'>) => void
   updateTechnician: (id: string, data: Partial<Technician>) => void
   toggleTechnicianStatus: (id: string) => void
@@ -181,12 +183,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const start = performance.now()
 
-      // Parallel data fetching for efficiency
+      // Parallel data fetching for efficiency with timeout
+      const fetchWithTimeout = (promise: Promise<any>, timeout = 5000) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), timeout),
+          ),
+        ])
+      }
+
+      // Otimização: Selecionar apenas colunas necessárias
       const [clientsRes, ticketsRes, catsRes, artsRes] = await Promise.all([
-        supabase.from('clients').select('*'),
-        supabase.from('tickets').select('*'),
-        supabase.from('knowledge_categories').select('*'),
-        supabase.from('knowledge_articles').select('*'),
+        fetchWithTimeout(
+          supabase
+            .from('clients')
+            .select('id, name, city, phone, arenaCode, arenaName, active, contractType, technicalManager, created_at')
+        ).catch((e) => {
+          console.warn('Failed to fetch clients:', e)
+          return { data: null, error: e }
+        }),
+        fetchWithTimeout(
+          supabase
+            .from('tickets')
+            .select('id, clientId, clientName, title, description, status, responsibleId, responsibleName, solutionSteps, attachments, customData, created_at, updated_at')
+        ).catch((e) => {
+          console.warn('Failed to fetch tickets:', e)
+          return { data: null, error: e }
+        }),
+        fetchWithTimeout(
+          supabase
+            .from('knowledge_categories')
+            .select('id, name, description'),
+        ).catch((e) => {
+          console.warn('Failed to fetch categories:', e)
+          return { data: null, error: e }
+        }),
+        fetchWithTimeout(
+          supabase
+            .from('knowledge_articles')
+            .select('id, title, excerpt, content, categoryId, categoryName, author, tags, views, helpfulCount, isPublic, created_at, updated_at'),
+        ).catch((e) => {
+          console.warn('Failed to fetch articles:', e)
+          return { data: null, error: e }
+        }),
       ])
 
       if (clientsRes.data) setClients(clientsRes.data)
@@ -212,7 +252,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       const end = performance.now()
-      console.log(`Data refresh completed in ${(end - start).toFixed(0)}ms`)
+      if (import.meta.env.DEV) {
+        console.log(`Data refresh completed in ${(end - start).toFixed(0)}ms`)
+      }
     } catch (error) {
       console.error('Failed to refresh data', error)
     }
@@ -223,15 +265,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!sessionUser) return null
 
     try {
-      // Fetch Role from profiles
-      const { data: profile } = await supabase!
+      // Fetch Role from profiles com timeout para não travar
+      const profilePromise = supabase!
         .from('profiles')
         .select('role')
         .eq('id', sessionUser.id)
         .single()
 
-      // Check if it's the super admin email
-      const isAdminEmail = sessionUser.email === 'allantomazela@gamail.com'
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve({ data: null, error: null }), 2000)
+      })
+
+      const { data: profile, error: profileError } = (await Promise.race([
+        profilePromise,
+        timeoutPromise,
+      ])) as any
+
+      if (profileError && import.meta.env.DEV) {
+        console.warn('[AppContext] Profile fetch error (non-blocking):', profileError)
+      }
+
+      // Check if it's a super admin email
+      // Admin emails podem ser configurados via variável de ambiente
+      // Formato: VITE_ADMIN_EMAILS=email1@example.com,email2@example.com
+      const adminEmails = import.meta.env.VITE_ADMIN_EMAILS
+        ? import.meta.env.VITE_ADMIN_EMAILS.split(',').map((e: string) =>
+            e.trim(),
+          )
+        : []
+      // Fallback para email único (retrocompatibilidade)
+      const singleAdminEmail = import.meta.env.VITE_ADMIN_EMAIL
+      if (singleAdminEmail) {
+        adminEmails.push(singleAdminEmail.trim())
+      }
+      // Email hardcoded temporário (remover após migração completa)
+      // TODO: Remover esta linha após configurar variáveis de ambiente
+      const legacyAdminEmail = 'allantomazela@gamail.com'
+      if (!adminEmails.includes(legacyAdminEmail)) {
+        adminEmails.push(legacyAdminEmail)
+      }
+
+      const isAdminEmail =
+        sessionUser.email && adminEmails.includes(sessionUser.email)
       const role = isAdminEmail ? 'admin' : profile?.role || 'agent'
 
       const mappedUser = {
@@ -266,11 +341,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
       } = await supabase.auth.getSession()
+
       if (session?.user) {
-        const userData = await handleSession(session.user)
+        // Não aguardar handleSession para não travar - setar user imediatamente
+        const userData = await handleSession(session.user).catch((e) => {
+          console.error('Error in handleSession, using fallback:', e)
+          // Fallback se handleSession falhar
+          return {
+            id: session.user.id,
+            name: session.user.user_metadata.full_name || session.user.email,
+            email: session.user.email || '',
+            role: 'agent' as UserRole,
+            avatar: session.user.user_metadata.avatar_url,
+          }
+        })
+
         if (userData) {
           setUser(userData)
-          // Don't await data refresh for session check to be fast, unless essential
+          // Don't await data refresh for session check to be fast
           refreshData().catch((e) =>
             console.error('Background data refresh failed', e),
           )
@@ -282,53 +370,103 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Session check failed', e)
       setUser(null)
     }
-  }, [isSupabase, handleSession, refreshData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupabase]) // Removido handleSession e refreshData para evitar loop infinito
 
   // Initialization Effect
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout | null = null
 
     const initialize = async () => {
+      if (import.meta.env.DEV) {
+        console.log('[AppContext] Starting initialization...')
+      }
       setIsLoading(true)
 
-      if (isSupabase && supabase) {
-        try {
-          // 1. Get initial session
-          const {
-            data: { session },
-          } = await supabase.auth.getSession()
-
-          if (session?.user && mounted) {
-            const userData = await handleSession(session.user)
-            if (mounted && userData) {
-              setUser(userData)
-              // Only fetch data if we have a user
-              await refreshData()
-            }
-          } else if (mounted) {
-            setUser(null)
-          }
-        } catch (error) {
-          console.error('Initialization error:', error)
-          if (mounted) setUser(null)
+      // Timeout de segurança: força setIsLoading(false) após 5 segundos
+      timeoutId = setTimeout(() => {
+        if (mounted) {
+          console.warn('[AppContext] Initialization timeout - forcing loading to false')
+          setIsLoading(false)
         }
-      } else {
-        // Fallback for mock mode
-        const storedUser = localStorage.getItem('mock-user')
-        if (storedUser && mounted) {
+      }, 5000)
+
+      try {
+        if (isSupabase && supabase) {
+          if (import.meta.env.DEV) {
+            console.log('[AppContext] Supabase configured, checking session...')
+          }
           try {
-            setUser(JSON.parse(storedUser))
-          } catch (e) {
-            console.error('Failed to restore mock user', e)
-          }
-        }
-        // Load other mock data from storage if needed
-        const storedArticles = localStorage.getItem('kb-articles')
-        if (storedArticles && mounted)
-          setKnowledgeArticles(JSON.parse(storedArticles))
-      }
+            // 1. Get initial session com timeout de 3 segundos para carregar rápido
+            const sessionPromise = supabase.auth.getSession()
+            const timeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                resolve({ data: { session: null }, error: null })
+              }, 3000)
+            })
 
-      if (mounted) setIsLoading(false)
+            const {
+              data: { session },
+              error: sessionError,
+            } = (await Promise.race([sessionPromise, timeoutPromise])) as any
+
+            if (sessionError) {
+              console.error('[AppContext] Session error:', sessionError)
+            }
+
+            if (session?.user && mounted) {
+              if (import.meta.env.DEV) {
+                console.log('[AppContext] Session found, handling user...')
+              }
+              const userData = await handleSession(session.user)
+              if (mounted && userData) {
+                setUser(userData)
+                // Only fetch data if we have a user (não aguardar para não travar)
+                refreshData().catch((e) =>
+                  console.error('[AppContext] Background data refresh failed', e),
+                )
+              }
+            } else if (mounted) {
+              if (import.meta.env.DEV) {
+                console.log('[AppContext] No session found, setting user to null')
+              }
+              setUser(null)
+            }
+          } catch (error) {
+            console.error('[AppContext] Initialization error:', error)
+            if (mounted) setUser(null)
+          }
+        } else {
+          if (import.meta.env.DEV) {
+            console.log('[AppContext] Supabase not configured, using mock mode')
+          }
+          // Fallback for mock mode
+          const storedUser = localStorage.getItem('mock-user')
+          if (storedUser && mounted) {
+            try {
+              setUser(JSON.parse(storedUser))
+            } catch (e) {
+              console.error('[AppContext] Failed to restore mock user', e)
+            }
+          }
+          // Load other mock data from storage if needed
+          const storedArticles = localStorage.getItem('kb-articles')
+          if (storedArticles && mounted)
+            setKnowledgeArticles(JSON.parse(storedArticles))
+        }
+      } catch (error) {
+        console.error('[AppContext] Unexpected initialization error:', error)
+      } finally {
+        // Sempre define loading como false, mesmo se houver erro
+        if (timeoutId) clearTimeout(timeoutId)
+        if (mounted) {
+          if (import.meta.env.DEV) {
+            console.log('[AppContext] Initialization complete, setting loading to false')
+          }
+          setIsLoading(false)
+        }
+      }
     }
 
     initialize()
@@ -339,27 +477,73 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isSupabase && supabase) {
       const { data } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log(`Auth event: ${event}`)
+          // Log sempre para debug
+          console.log(`[AppContext] Auth event: ${event}`, session?.user?.email)
+          
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             if (session?.user) {
-              const userData = await handleSession(session.user)
-              setUser(userData)
-              if (event === 'SIGNED_IN') await refreshData()
+              console.log('[AppContext] Processing SIGNED_IN, setting user immediately...')
+              
+              // Setar user IMEDIATAMENTE com dados básicos (não bloquear)
+              const immediateUser = {
+                id: session.user.id,
+                name: session.user.user_metadata.full_name || session.user.email,
+                email: session.user.email || '',
+                role: 'agent' as UserRole, // Será atualizado depois se necessário
+                avatar: session.user.user_metadata.avatar_url,
+              }
+              setUser(immediateUser)
+              console.log('[AppContext] User set immediately:', immediateUser.email)
+
+              // Atualizar com dados completos em background (não bloquear redirecionamento)
+              handleSession(session.user)
+                .then((userData) => {
+                  if (userData) {
+                    console.log('[AppContext] User data updated from handleSession')
+                    setUser(userData)
+                  }
+                })
+                .catch((e) => {
+                  console.error('[AppContext] Error in handleSession (non-critical):', e)
+                  // User já foi setado acima, então não precisa fazer nada
+                })
+
+              if (event === 'SIGNED_IN') {
+                // Não aguardar refreshData
+                refreshData().catch((e) =>
+                  console.error('Background data refresh failed', e),
+                )
+              }
             }
           } else if (event === 'SIGNED_OUT') {
+            console.log('[AppContext] SIGNED_OUT event')
             setUser(null)
             setTickets([])
           }
         },
       )
       authListener = data.subscription
+      console.log('[AppContext] Auth state change listener registered')
     }
 
     return () => {
       mounted = false
+      if (timeoutId) clearTimeout(timeoutId)
       if (authListener) authListener.unsubscribe()
+      // Garante que loading seja false ao desmontar
+      setIsLoading(false)
     }
-  }, [isSupabase, handleSession, refreshData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupabase]) // Removido user para evitar loop infinito
+
+  // Setup realtime notifications usando hook customizado
+  useRealtime({
+    userId: user?.id,
+    enabled: isSupabase && !!user,
+    onNotification: (notification) => {
+      setNotifications((prev) => [notification, ...prev])
+    },
+  })
 
   // Subscriptions & Notifications State
   const [subscriptions, setSubscriptions] = useState<KBSubscription[]>(() => {
@@ -505,12 +689,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const updateUserProfileImage = (imageUrl: string) => {
-    if (user) {
+  const updateUserProfileImage = async (imageUrl: string) => {
+    if (!user) return
+
+    try {
+      // Atualizar estado local imediatamente
       setUser({ ...user, avatar: imageUrl })
       setUsersList((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, avatar: imageUrl } : u)),
       )
+
+      // Salvar no Supabase
+      if (isSupabase && supabase) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ avatar_url: imageUrl })
+          .eq('id', user.id)
+
+        if (error) {
+          console.error('Erro ao salvar foto no Supabase:', error)
+          throw error
+        }
+
+        // Atualizar também no auth.users metadata
+        const { error: authError } = await supabase.auth.updateUser({
+          data: { avatar_url: imageUrl },
+        })
+
+        if (authError) {
+          console.warn('Erro ao atualizar metadata do auth:', authError)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar foto de perfil:', error)
+      throw error
+    }
+  }
+
+  const updateUserProfile = async (data: { name?: string; avatar?: string }) => {
+    if (!user) return
+
+    try {
+      const updates: any = {}
+      if (data.name) updates.full_name = data.name
+      if (data.avatar) updates.avatar_url = data.avatar
+
+      // Atualizar estado local
+      if (data.name) {
+        setUser({ ...user, name: data.name })
+        setUsersList((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, name: data.name! } : u)),
+        )
+      }
+      if (data.avatar) {
+        setUser({ ...user, avatar: data.avatar })
+        setUsersList((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, avatar: data.avatar! } : u)),
+        )
+      }
+
+      // Salvar no Supabase
+      if (isSupabase && supabase) {
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id)
+
+        if (error) {
+          console.error('Erro ao salvar perfil no Supabase:', error)
+          throw error
+        }
+
+        // Atualizar também no auth.users metadata
+        const authUpdates: any = {}
+        if (data.name) authUpdates.full_name = data.name
+        if (data.avatar) authUpdates.avatar_url = data.avatar
+
+        if (Object.keys(authUpdates).length > 0) {
+          const { error: authError } = await supabase.auth.updateUser({
+            data: authUpdates,
+          })
+
+          if (authError) {
+            console.warn('Erro ao atualizar metadata do auth:', authError)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error)
+      throw error
     }
   }
 
@@ -521,38 +788,147 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active: true,
     }
     if (isSupabase && supabase) {
-      const { data: saved, error } = await supabase
-        .from('clients')
-        .insert(newClient)
-        .select()
-        .single()
-      if (!error && saved) {
-        setClients((prev) => [...prev, saved])
+      try {
+        console.log('[AppContext] Adding client:', newClient)
+        const { data: saved, error } = await supabase
+          .from('clients')
+          .insert(newClient)
+          .select()
+          .single()
+        
+        if (error) {
+          console.error('[AppContext] Error adding client:', error)
+          throw new Error(error.message || 'Erro ao salvar cliente')
+        }
+        
+        if (saved) {
+          console.log('[AppContext] Client saved successfully:', saved)
+          
+          // Registrar no audit log
+          const { logAudit } = await import('@/lib/audit-log')
+          await logAudit('clients', saved.id, 'INSERT', {
+            newData: saved,
+            userId: user?.id,
+            userEmail: user?.email,
+          })
+          
+          setClients((prev) => [...prev, saved])
+          // Recarregar dados para garantir sincronização
+          refreshData().catch((e) =>
+            console.error('Failed to refresh data after adding client', e),
+          )
+          return saved
+        }
+      } catch (error: any) {
+        console.error('[AppContext] Failed to add client:', error)
+        throw error
       }
     } else {
       setClients((prev) => [...prev, newClient])
+      return newClient
     }
   }
 
   const updateClient = async (id: string, data: Partial<Client>) => {
     if (isSupabase && supabase) {
-      await supabase.from('clients').update(data).eq('id', id)
+      try {
+        console.log('[AppContext] Updating client:', id, data)
+        
+        // Buscar dados antigos para audit log
+        const oldClient = clients.find((c) => c.id === id)
+        
+        const { data: updated, error } = await supabase
+          .from('clients')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single()
+        
+        if (error) {
+          console.error('[AppContext] Error updating client:', error)
+          throw new Error(error.message || 'Erro ao atualizar cliente')
+        }
+        
+        if (updated) {
+          console.log('[AppContext] Client updated successfully:', updated)
+          
+          // Registrar no audit log
+          const { logAudit, getChangedFields } = await import('@/lib/audit-log')
+          const changedFields = oldClient ? getChangedFields(oldClient, updated) : []
+          await logAudit('clients', id, 'UPDATE', {
+            oldData: oldClient,
+            newData: updated,
+            changedFields,
+            userId: user?.id,
+            userEmail: user?.email,
+          })
+          
+          setClients((prev) => prev.map((c) => (c.id === id ? updated : c)))
+          // Recarregar dados para garantir sincronização
+          refreshData().catch((e) =>
+            console.error('Failed to refresh data after updating client', e),
+          )
+          return updated
+        }
+      } catch (error: any) {
+        console.error('[AppContext] Failed to update client:', error)
+        throw error
+      }
+    } else {
+      setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)))
     }
-    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)))
   }
 
   const toggleClientStatus = async (id: string) => {
     const client = clients.find((c) => c.id === id)
     if (client) {
-      if (isSupabase && supabase) {
-        await supabase
-          .from('clients')
-          .update({ active: !client.active })
-          .eq('id', id)
+      try {
+        if (isSupabase && supabase) {
+          console.log('[AppContext] Toggling client status:', id, 'from', client.active, 'to', !client.active)
+          const { data: updated, error } = await supabase
+            .from('clients')
+            .update({ active: !client.active })
+            .eq('id', id)
+            .select()
+            .single()
+          
+          if (error) {
+            console.error('[AppContext] Error toggling client status:', error)
+            throw new Error(error.message || 'Erro ao alterar status do cliente')
+          }
+          
+          if (updated) {
+            console.log('[AppContext] Client status updated successfully:', updated)
+            
+            // Registrar no audit log
+            const { logAudit } = await import('@/lib/audit-log')
+            await logAudit('clients', id, 'UPDATE', {
+              oldData: client,
+              newData: updated,
+              changedFields: ['active'],
+              userId: user?.id,
+              userEmail: user?.email,
+            })
+            
+            setClients((prev) =>
+              prev.map((c) => (c.id === id ? updated : c)),
+            )
+            // Recarregar dados para garantir sincronização
+            refreshData().catch((e) =>
+              console.error('Failed to refresh data after toggling client status', e),
+            )
+            return updated
+          }
+        } else {
+          // Mock mode
+          setClients((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
+          )
+        }
+      } catch (error: any) {
+        console.error('[AppContext] Failed to toggle client status:', error)
+        throw error
       }
-      setClients((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
-      )
     }
   }
 
@@ -946,6 +1322,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getArticleById,
         updateUserRole,
         updateUserProfileImage,
+        updateUserProfile,
         addTechnician,
         updateTechnician,
         toggleTechnicianStatus,

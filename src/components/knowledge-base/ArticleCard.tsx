@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +12,7 @@ interface ArticleCardProps {
   article: KnowledgeArticle
 }
 
-export function ArticleCard({ article }: ArticleCardProps) {
+export const ArticleCard = memo(function ArticleCard({ article }: ArticleCardProps) {
   return (
     <Card className="hover:shadow-md transition-all duration-200 border group h-full flex flex-col">
       <CardHeader className="pb-3 space-y-2">
@@ -59,4 +60,4 @@ export function ArticleCard({ article }: ArticleCardProps) {
       </CardFooter>
     </Card>
   )
-}
+})

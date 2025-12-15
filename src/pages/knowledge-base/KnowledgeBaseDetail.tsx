@@ -3,6 +3,7 @@ import { useAppContext } from '@/context/AppContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { sanitizeHTML } from '@/lib/sanitize'
 import {
   ArrowLeft,
   Calendar,
@@ -214,7 +215,7 @@ export default function KnowledgeBaseDetail() {
         <div className="lg:col-span-8">
           <Card className="border-none shadow-sm">
             <CardContent className="p-6 md:p-8 prose prose-slate dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(article.content) }} />
             </CardContent>
           </Card>
 

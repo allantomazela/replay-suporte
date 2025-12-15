@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAppContext } from '@/context/AppContext'
+import { calculateSLAStats, formatSLATime } from '@/lib/sla-tracking'
 import { ReportFilters } from '@/components/reports/ReportFilters'
 import { KPIStats } from '@/components/reports/KPIStats'
 import { TicketsOverTimeChart } from '@/components/reports/charts/TicketsOverTimeChart'
@@ -75,6 +76,11 @@ export default function Reports() {
     problemTypeFilter,
   ])
 
+  // SLA Stats
+  const slaStats = useMemo(() => {
+    return calculateSLAStats(filteredTickets)
+  }, [filteredTickets])
+
   // KPIs Calculation
   const kpis = useMemo(() => {
     const total = filteredTickets.length
@@ -82,30 +88,24 @@ export default function Reports() {
       (t) => t.status === 'Resolvido',
     ).length
 
-    // Avg Resolution Time (hours)
-    let totalResolutionHours = 0
-    let resolvedCount = 0
-    filteredTickets.forEach((t) => {
-      if (t.status === 'Resolvido') {
-        const diff = differenceInHours(
-          new Date(t.updatedAt),
-          new Date(t.createdAt),
-        )
-        totalResolutionHours += diff > 0 ? diff : 0
-        resolvedCount++
-      }
-    })
-    const avgResolutionTime = resolvedCount
-      ? (totalResolutionHours / resolvedCount).toFixed(1)
-      : '0'
+    // Usar dados do SLA tracking
+    const avgResolutionTime = slaStats.avgResolution
+      ? formatSLATime(slaStats.avgResolution)
+      : '0h'
+    const avgFirstResponse = slaStats.avgFirstResponse
+      ? formatSLATime(slaStats.avgFirstResponse)
+      : '0h'
 
-    // Avg First Response (Simulated: 20% of resolution time or 2h if open)
-    const avgFirstResponse = resolvedCount
-      ? (totalResolutionHours / resolvedCount / 5).toFixed(1)
-      : '0.5'
-
-    return { total, resolved, avgResolutionTime, avgFirstResponse }
-  }, [filteredTickets])
+    return {
+      total,
+      resolved,
+      avgResolutionTime,
+      avgFirstResponse,
+      slaCompliance: slaStats.slaCompliance,
+      withinSLA: slaStats.withinSLA,
+      outsideSLA: slaStats.outsideSLA,
+    }
+  }, [filteredTickets, slaStats])
 
   // Charts Data Preparation
   const ticketsOverTimeData = useMemo(() => {
@@ -300,15 +300,21 @@ export default function Reports() {
             },
             {
               title: 'Tempo Médio Resolução',
-              value: `${kpis.avgResolutionTime}h`,
+              value: kpis.avgResolutionTime,
               icon: Clock,
-              description: 'Horas por ticket',
+              description: 'Tempo médio',
             },
             {
               title: 'Tempo Médio 1ª Resposta',
-              value: `${kpis.avgFirstResponse}h`,
+              value: kpis.avgFirstResponse,
               icon: Timer,
-              description: 'Estimativa',
+              description: 'Tempo médio',
+            },
+            {
+              title: 'Conformidade SLA',
+              value: `${kpis.slaCompliance || 0}%`,
+              icon: CheckCircle2,
+              description: `${kpis.withinSLA || 0} dentro, ${kpis.outsideSLA || 0} fora`,
             },
           ]}
         />

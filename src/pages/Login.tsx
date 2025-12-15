@@ -139,15 +139,23 @@ export default function Login() {
           throw new Error('Sessão não pôde ser estabelecida. Tente novamente.')
         }
 
-        // Trigger context update manually to ensure state is updated before redirect logic kicks in
-        await checkSession()
+        console.log('[Login] Login successful, session:', data.session.user.email)
 
         toast({
           title: 'Login realizado com sucesso',
           description: 'Redirecionando...',
         })
 
-        // We do NOT set isLocalLoading to false here to keep the spinner active until redirect happens
+        // O onAuthStateChange vai atualizar o estado automaticamente
+        // Mas chamar checkSession também para garantir
+        checkSession().then(() => {
+          console.log('[Login] checkSession completed')
+        }).catch((e) => {
+          console.error('[Login] CheckSession failed:', e)
+        })
+
+        // Não bloquear - deixar o redirecionamento acontecer naturalmente
+        setIsLocalLoading(false)
       } catch (error: any) {
         console.error('Login error:', error)
         // Ensure sign out on error to clean state
@@ -241,11 +249,11 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg border-0 animate-fade-in">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center mb-2">
-            <div className="bg-primary p-3 rounded-lg">
-              <span className="text-white font-bold text-2xl tracking-tighter">
-                REPLAY
-              </span>
-            </div>
+            <img
+              src="/logo.svg"
+              alt="Logo Replay"
+              className="h-24 w-auto object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-bold">Replay Suporte</CardTitle>
           <CardDescription>

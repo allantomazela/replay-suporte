@@ -13,11 +13,12 @@ import {
   Ticket as TicketIcon,
 } from 'lucide-react'
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog'
+import { AuditHistory } from '@/components/audit/AuditHistory'
 
 export default function ClientProfile() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getClientById, tickets } = useAppContext()
+  const { getClientById, tickets, user } = useAppContext()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const client = id ? getClientById(id) : undefined
@@ -153,6 +154,11 @@ export default function ClientProfile() {
           </div>
         )}
       </div>
+
+      {/* Histórico de Alterações */}
+      {user?.role === 'admin' && (
+        <AuditHistory tableName="clients" recordId={client.id} />
+      )}
 
       <ClientFormDialog
         open={isDialogOpen}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Keyboard, Database } from 'lucide-react'
+import { Search, Keyboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
 import { CommandMenu } from '@/components/CommandMenu'
@@ -13,15 +13,10 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
-import { SupabaseWizard } from '@/components/supabase/SupabaseWizard'
-import { isSupabaseConfigured } from '@/lib/supabase'
-import { cn } from '@/lib/utils'
 
 export function Header() {
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
-  const [isSupabaseOpen, setIsSupabaseOpen] = useState(false)
-  const isConnected = isSupabaseConfigured()
 
   return (
     <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6 transition-all">
@@ -48,19 +43,6 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant={isConnected ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => setIsSupabaseOpen(true)}
-          className={cn(
-            'hidden sm:flex gap-2',
-            !isConnected && 'bg-green-600 hover:bg-green-700 text-white',
-          )}
-        >
-          <Database className="h-4 w-4" />
-          {isConnected ? 'Supabase Conectado' : 'Integrar Supabase'}
-        </Button>
-
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -87,7 +69,6 @@ export function Header() {
         open={isShortcutsOpen}
         onOpenChange={setIsShortcutsOpen}
       />
-      <SupabaseWizard open={isSupabaseOpen} onOpenChange={setIsSupabaseOpen} />
     </header>
   )
 }

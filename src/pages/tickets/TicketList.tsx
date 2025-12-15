@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAppContext } from '@/context/AppContext'
+import { useDebounce } from '@/hooks/use-debounce'
+import { usePagination } from '@/hooks/use-pagination'
+import { Pagination } from '@/components/ui/pagination'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -28,6 +31,7 @@ export default function TicketList() {
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [clientFilter, setClientFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
@@ -46,15 +50,16 @@ export default function TicketList() {
     setPriorityFilter('all')
   }
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const client = clients.find((c) => c.id === ticket.clientId)
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      const client = clients.find((c) => c.id === ticket.clientId)
 
-    // Text Search (Expanded to include Arena Name and Code)
-    const searchLower = searchTerm.toLowerCase()
+      // Text Search (Expanded to include Arena Name and Code)
+      const searchLower = debouncedSearchTerm.toLowerCase()
     const matchesSearch =
       ticket.title.toLowerCase().includes(searchLower) ||
       ticket.description.toLowerCase().includes(searchLower) ||
-      ticket.id.includes(searchTerm) ||
+      ticket.id.toLowerCase().includes(searchLower) ||
       (client &&
         (client.arenaName.toLowerCase().includes(searchLower) ||
           client.arenaCode.toLowerCase().includes(searchLower)))
@@ -89,21 +94,31 @@ export default function TicketList() {
       matchesArena = false
     }
 
-    // Priority Filter (Custom Field)
-    let matchesPriority = true
-    if (priorityFilter !== 'all') {
-      matchesPriority = ticket.customData?.priority === priorityFilter
-    }
+      // Priority Filter (Custom Field)
+      let matchesPriority = true
+      if (priorityFilter !== 'all') {
+        matchesPriority = ticket.customData?.priority === priorityFilter
+      }
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesClient &&
-      matchesDate &&
-      matchesArena &&
-      matchesPriority
-    )
-  })
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesClient &&
+        matchesDate &&
+        matchesArena &&
+        matchesPriority
+      )
+    })
+  }, [tickets, clients, debouncedSearchTerm, statusFilter, clientFilter, dateRange, arenaFilter, priorityFilter])
+
+  // Paginação
+  const {
+    paginatedData: paginatedTickets,
+    currentPage,
+    totalPages,
+    goToPage,
+    totalItems,
+  } = usePagination(filteredTickets, { pageSize: 50 })
 
   const handleEdit = (id: string) => {
     setEditingTicketId(id)
@@ -195,7 +210,7 @@ export default function TicketList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTickets.map((ticket) => {
+                {paginatedTickets.map((ticket) => {
                   const client = clients.find((c) => c.id === ticket.clientId)
                   return (
                     <TableRow
@@ -261,7 +276,7 @@ export default function TicketList() {
                     </TableRow>
                   )
                 })}
-                {filteredTickets.length === 0 && (
+                {paginatedTickets.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={8}
@@ -274,9 +289,23 @@ export default function TicketList() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {paginatedTickets.length} de {totalItems} tickets
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+              />
+            </div>
+          )}
         </div>
       ) : (
-        <TicketKanban tickets={filteredTickets} onEdit={handleEdit} />
+        <TicketKanban tickets={paginatedTickets} onEdit={handleEdit} />
       )}
 
       <TicketFormDialog

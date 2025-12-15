@@ -73,9 +73,9 @@ const ReportHeader = ({
     <div className="flex justify-between items-start border-b-2 border-slate-100 pb-4 mb-8 shrink-0">
       <div className="flex items-center gap-4">
         <img
-          src="https://img.usecurling.com/i?q=chart-pie&color=blue"
-          alt="Logo"
-          className="w-12 h-12 object-contain"
+          src="/logo.svg"
+          alt="Logo Replay"
+          className="w-16 h-16 object-contain"
         />
         <div>
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">

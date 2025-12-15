@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { BookOpen, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function PortalLayout() {
@@ -8,9 +8,11 @@ export default function PortalLayout() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/portal" className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-              <BookOpen className="h-5 w-5" />
-            </div>
+            <img 
+              src="/logo.svg" 
+              alt="Logo Replay" 
+              className="h-12 w-auto object-contain"
+            />
             <span className="font-bold text-xl tracking-tight">
               Replay Ajuda
             </span>

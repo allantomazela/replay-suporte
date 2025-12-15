@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { TicketStatus } from '@/types'
 import { cn } from '@/lib/utils'
@@ -7,7 +8,7 @@ interface TicketStatusBadgeProps {
   className?: string
 }
 
-export function TicketStatusBadge({
+export const TicketStatusBadge = memo(function TicketStatusBadge({
   status,
   className,
 }: TicketStatusBadgeProps) {
@@ -42,4 +43,4 @@ export function TicketStatusBadge({
       {status}
     </Badge>
   )
-}
+})

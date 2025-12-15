@@ -1,32 +1,36 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Loader2 } from 'lucide-react'
 import Layout from './components/Layout'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import ClientList from './pages/clients/ClientList'
-import ClientProfile from './pages/clients/ClientProfile'
-import TicketList from './pages/tickets/TicketList'
-import TicketDetail from './pages/tickets/TicketDetail'
-import Reports from './pages/Reports'
-import PerformanceReports from './pages/PerformanceReports'
-import Profile from './pages/Profile'
-import KnowledgeBaseList from './pages/knowledge-base/KnowledgeBaseList'
-import KnowledgeBaseDetail from './pages/knowledge-base/KnowledgeBaseDetail'
-import KnowledgeBaseEditor from './pages/knowledge-base/KnowledgeBaseEditor'
-import SystemHealth from './pages/admin/SystemHealth'
-import UserList from './pages/admin/UserList'
-import TechnicianList from './pages/technicians/TechnicianList'
-import { AppProvider } from '@/context/AppContext'
-import { ThemeProvider } from '@/components/theme-provider'
+import Index from './pages/Index'
 import PortalLayout from './pages/portal/PortalLayout'
 import PortalHome from './pages/portal/PortalHome'
 import PortalArticle from './pages/portal/PortalArticle'
+import { AppProvider } from '@/context/AppContext'
+import { ThemeProvider } from '@/components/theme-provider'
+import { ReactQueryProvider } from '@/lib/react-query'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { useEffect } from 'react'
-import Index from './pages/Index'
+
+// Lazy loading para melhorar performance inicial
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ClientList = lazy(() => import('./pages/clients/ClientList'))
+const ClientProfile = lazy(() => import('./pages/clients/ClientProfile'))
+const TicketList = lazy(() => import('./pages/tickets/TicketList'))
+const TicketDetail = lazy(() => import('./pages/tickets/TicketDetail'))
+const Reports = lazy(() => import('./pages/Reports'))
+const PerformanceReports = lazy(() => import('./pages/PerformanceReports'))
+const Profile = lazy(() => import('./pages/Profile'))
+const KnowledgeBaseList = lazy(() => import('./pages/knowledge-base/KnowledgeBaseList'))
+const KnowledgeBaseDetail = lazy(() => import('./pages/knowledge-base/KnowledgeBaseDetail'))
+const KnowledgeBaseEditor = lazy(() => import('./pages/knowledge-base/KnowledgeBaseEditor'))
+const SystemHealth = lazy(() => import('./pages/admin/SystemHealth'))
+const UserList = lazy(() => import('./pages/admin/UserList'))
+const TechnicianList = lazy(() => import('./pages/technicians/TechnicianList'))
 
 const AppContent = () => {
   // Global error handling for 3rd party scripts issues and unhandled promises
@@ -116,19 +120,31 @@ const AppContent = () => {
   )
 }
 
+// Loading component para Suspense
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+    <p className="text-sm text-muted-foreground mt-4">Carregando...</p>
+  </div>
+)
+
 const App = () => (
   <BrowserRouter
     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
   >
     <ThemeProvider defaultTheme="system" storageKey="replay-ui-theme">
       <ErrorBoundary>
-        <AppProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AppContent />
-          </TooltipProvider>
-        </AppProvider>
+        <ReactQueryProvider>
+          <AppProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Suspense fallback={<PageLoader />}>
+                <AppContent />
+              </Suspense>
+            </TooltipProvider>
+          </AppProvider>
+        </ReactQueryProvider>
       </ErrorBoundary>
     </ThemeProvider>
   </BrowserRouter>

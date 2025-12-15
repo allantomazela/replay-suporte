@@ -17,8 +17,9 @@ import {
   Upload,
 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { Save, Edit2, X } from 'lucide-react'
 
 export default function Profile() {
   const {
@@ -29,13 +30,24 @@ export default function Profile() {
     subscriptions,
     unsubscribe,
     updateUserProfileImage,
+    updateUserProfile,
   } = useAppContext()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(user?.name || '')
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Sincronizar editedName quando user mudar
+  useEffect(() => {
+    if (user) {
+      setEditedName(user.name)
+    }
+  }, [user?.name])
 
   if (!user) return null
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -48,15 +60,60 @@ export default function Profile() {
       }
 
       const reader = new FileReader()
-      reader.onloadend = () => {
-        updateUserProfileImage(reader.result as string)
-        toast({
-          title: 'Foto Atualizada',
-          description: 'Sua foto de perfil foi atualizada com sucesso.',
-        })
+      reader.onloadend = async () => {
+        try {
+          setIsSaving(true)
+          await updateUserProfileImage(reader.result as string)
+          toast({
+            title: 'Foto Atualizada',
+            description: 'Sua foto de perfil foi salva com sucesso.',
+          })
+        } catch (error) {
+          toast({
+            title: 'Erro ao salvar foto',
+            description: 'Não foi possível salvar a foto. Tente novamente.',
+            variant: 'destructive',
+          })
+        } finally {
+          setIsSaving(false)
+        }
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      toast({
+        title: 'Nome inválido',
+        description: 'O nome não pode estar vazio.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      await updateUserProfile({ name: editedName.trim() })
+      setIsEditingName(false)
+      toast({
+        title: 'Perfil Atualizado',
+        description: 'Seu nome foi salvo com sucesso.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as alterações. Tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditedName(user.name)
+    setIsEditingName(false)
   }
 
   return (
@@ -125,8 +182,48 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label>Nome Completo</Label>
-                <Input value={user.name} readOnly />
+                <div className="flex items-center justify-between">
+                  <Label>Nome Completo</Label>
+                  {!isEditingName && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingName(true)}
+                      className="h-8"
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  )}
+                </div>
+                {isEditingName ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      disabled={isSaving}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveName}
+                      disabled={isSaving || editedName.trim() === user.name}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Input value={user.name} readOnly />
+                )}
               </div>
               <div className="grid gap-2">
                 <Label>Email</Label>

@@ -23,7 +23,6 @@ import {
   Settings,
   LogOut,
   ChevronsUpDown,
-  Sparkles,
   ChevronRight,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -123,7 +122,7 @@ export function Sidebar() {
                 className={cn(
                   'transition-all duration-200',
                   isGroupActive &&
-                    'bg-sidebar-accent text-sidebar-accent-foreground font-semibold',
+                  'bg-sidebar-accent text-sidebar-accent-foreground font-semibold',
                 )}
               >
                 {renderIcon(item)}
@@ -157,7 +156,7 @@ export function Sidebar() {
             className={cn(
               'transition-all duration-200',
               isActive &&
-                'bg-sidebar-accent text-sidebar-accent-foreground font-semibold border-l-2 border-primary pl-2',
+              'bg-sidebar-accent text-sidebar-accent-foreground font-semibold border-l-2 border-primary pl-2',
             )}
           >
             <NavLink to={item.path}>
@@ -178,7 +177,7 @@ export function Sidebar() {
           className={cn(
             'transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-sidebar-accent/50',
             isActive &&
-              'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-sm border-l-4 border-primary rounded-l-none pl-3',
+            'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-sm border-l-4 border-primary rounded-l-none pl-3',
           )}
         >
           <NavLink to={item.path}>
@@ -200,9 +199,11 @@ export function Sidebar() {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-orange-400 text-sidebar-primary-foreground shadow-lg shadow-orange-500/20">
-                  <Sparkles className="size-4" />
-                </div>
+                <img
+                  src="/logo.svg"
+                  alt="Logo Replay"
+                  className="h-12 w-12 object-contain"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-bold text-base tracking-tight">
                     Replay
@@ -234,9 +235,14 @@ export function Sidebar() {
                     size="lg"
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
-                    <Avatar className="h-8 w-8 rounded-lg border border-sidebar-border shadow-sm">
-                      <AvatarImage src={user?.avatar} alt={user?.name} />
-                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold">
+                    <Avatar className="h-12 w-12 rounded-lg border-2 border-sidebar-border shadow-md ring-2 ring-sidebar-accent/20">
+                      <AvatarImage
+                        src={user?.avatar}
+                        alt={user?.name}
+                        className="object-cover"
+                        loading="eager"
+                      />
+                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold text-lg">
                         {user?.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
