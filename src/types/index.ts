@@ -159,4 +159,23 @@ export interface Technician {
   phone: string
   specialties: string[]
   active: boolean
+  serviceRadius?: number // Raio de atuação em km
+  
+  // Dados pessoais adicionais
+  cpfCnpj?: string
+  birthDate?: string
+  
+  // Endereço
+  cep?: string
+  state?: string
+  city?: string
+  neighborhood?: string
+  address?: string
+  addressNumber?: string
+  complement?: string
+  
+  // Dados profissionais
+  experienceYears?: number
+  certifications?: string
+  notes?: string
 }

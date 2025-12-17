@@ -3,7 +3,6 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { Loader2 } from 'lucide-react'
 import Layout from './components/Layout'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'
@@ -15,6 +14,7 @@ import { AppProvider } from '@/context/AppContext'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ReactQueryProvider } from '@/lib/react-query'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import '@/lib/clear-cache' // Inicializa função global de limpeza
 
 // Lazy loading para melhorar performance inicial
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -120,12 +120,15 @@ const AppContent = () => {
   )
 }
 
+import { Loading } from '@/components/ui/loading'
+
 // Loading component para Suspense
 const PageLoader = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-    <p className="text-sm text-muted-foreground mt-4">Carregando...</p>
-  </div>
+  <Loading
+    message="Carregando página..."
+    size="lg"
+    fullScreen
+  />
 )
 
 const App = () => (

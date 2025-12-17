@@ -43,6 +43,27 @@ import {
 } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function ArticleCardSkeleton() {
+  return (
+    <div className="bg-card border rounded-lg p-6 space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-5 w-20" />
+        <Skeleton className="h-5 w-20" />
+      </div>
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+    </div>
+  )
+}
 
 export default function KnowledgeBaseList() {
   const {
@@ -53,6 +74,7 @@ export default function KnowledgeBaseList() {
     unsubscribe,
     subscriptions,
     user,
+    isLoading,
   } = useAppContext()
   const permissions = getKBPermissions()
   const { toast } = useToast()
@@ -369,7 +391,13 @@ export default function KnowledgeBaseList() {
       </div>
 
       {/* Articles Grid */}
-      {paginatedArticles.length > 0 ? (
+      {isLoading && knowledgeArticles.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ArticleCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : paginatedArticles.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedArticles.map((article) => (

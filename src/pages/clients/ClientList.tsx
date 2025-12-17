@@ -36,9 +36,44 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useErrorHandler } from '@/hooks/use-error-handler'
+
+function ClientTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-20" />
+          </TableCell>
+          <TableCell className="hidden lg:table-cell">
+            <Skeleton className="h-4 w-36" />
+          </TableCell>
+          <TableCell className="text-right">
+            <div className="flex justify-end gap-1">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  )
+}
 
 export default function ClientList() {
-  const { clients, toggleClientStatus } = useAppContext()
+  const { clients, toggleClientStatus, isLoading } = useAppContext()
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -47,6 +82,7 @@ export default function ClientList() {
   )
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const { toast } = useToast()
+  const { handleAsyncError } = useErrorHandler()
 
   const filteredClients = useMemo(() => {
     if (!debouncedSearchTerm.trim()) return clients
@@ -84,9 +120,19 @@ export default function ClientList() {
 
   const confirmDelete = async () => {
     if (deleteId) {
-      try {
-        const client = clients.find((c) => c.id === deleteId)
-        await toggleClientStatus(deleteId)
+      const client = clients.find((c) => c.id === deleteId)
+      const result = await handleAsyncError(
+        async () => {
+          await toggleClientStatus(deleteId)
+          return true
+        },
+        {
+          showToast: true,
+          fallbackMessage: 'Não foi possível alterar o status do cliente.',
+        }
+      )
+
+      if (result) {
         toast({
           title: 'Status atualizado',
           description: client?.active
@@ -94,13 +140,6 @@ export default function ClientList() {
             : 'O cliente foi reativado com sucesso.',
         })
         setDeleteId(null)
-      } catch (error: any) {
-        console.error('Error toggling client status:', error)
-        toast({
-          title: 'Erro ao alterar status',
-          description: error.message || 'Não foi possível alterar o status do cliente.',
-          variant: 'destructive',
-        })
       }
     }
   }
@@ -195,7 +234,10 @@ export default function ClientList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.map((client) => (
+              {isLoading && clients.length === 0 ? (
+                <ClientTableSkeleton />
+              ) : (
+                paginatedClients.map((client) => (
                 <TableRow
                   key={client.id}
                   className={cn(
@@ -260,8 +302,9 @@ export default function ClientList() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-              {paginatedClients.length === 0 && (
+                ))
+              )}
+              {!isLoading && paginatedClients.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={6}

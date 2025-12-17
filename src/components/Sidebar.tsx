@@ -39,6 +39,7 @@ import { useState } from 'react'
 import { MenuCustomizationDialog } from '@/components/settings/MenuCustomizationDialog'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
+import { useLinkPrefetch } from '@/hooks/use-prefetch'
 
 export function Sidebar() {
   const { user, logout, navOrder, navPreferences, iconSet, customIcons } =
@@ -46,6 +47,7 @@ export function Sidebar() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const location = useLocation()
   const isMobile = useIsMobile()
+  const { prefetchClients, prefetchTickets } = useLinkPrefetch()
 
   // Helper to render icon based on settings
   const renderIcon = (item: NavItemConfig) => {
@@ -146,6 +148,15 @@ export function Sidebar() {
       )
     }
 
+    // Handler para prefetch baseado na rota
+    const handleMouseEnter = () => {
+      if (item.path.includes('/clients')) {
+        prefetchClients()
+      } else if (item.path.includes('/tickets')) {
+        prefetchTickets()
+      }
+    }
+
     // Leaf Item
     if (isSub) {
       return (
@@ -159,7 +170,7 @@ export function Sidebar() {
               'bg-sidebar-accent text-sidebar-accent-foreground font-semibold border-l-2 border-primary pl-2',
             )}
           >
-            <NavLink to={item.path}>
+            <NavLink to={item.path} onMouseEnter={handleMouseEnter}>
               {renderIcon(item)}
               <span>{item.label}</span>
             </NavLink>
@@ -180,7 +191,7 @@ export function Sidebar() {
             'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-sm border-l-4 border-primary rounded-l-none pl-3',
           )}
         >
-          <NavLink to={item.path}>
+          <NavLink to={item.path} onMouseEnter={handleMouseEnter}>
             {renderIcon(item)}
             <span>{item.label}</span>
           </NavLink>

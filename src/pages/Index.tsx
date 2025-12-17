@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '@/context/AppContext'
-import { Loader2 } from 'lucide-react'
+import { Loading } from '@/components/ui/loading'
 
 export default function Index() {
   const { user, isLoading } = useAppContext()
@@ -27,13 +27,10 @@ export default function Index() {
   }, [user, isLoading, navigate, location])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">
-          Carregando aplicação...
-        </p>
-      </div>
-    </div>
+    <Loading
+      message="Inicializando aplicação..."
+      size="lg"
+      fullScreen
+    />
   )
 }

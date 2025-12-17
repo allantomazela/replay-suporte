@@ -1,23 +1,62 @@
-<!-- HTML template for the frontend react app: https://developer.mozilla.org/en-US/docs/Web/HTML --><!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
     <title>Sistema Suporte Replay Sports</title>
+    <meta name="title" content="Sistema Suporte Replay Sports" />
     <meta
       name="description"
       content="Sistema de suporte para prestação de serviços a empresa Replay Sports"
     />
-    <meta name="author" content="Skip (https://goskip.dev)" />
+    <meta name="author" content="Replay Sports" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#000000" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://seu-dominio.com/" />
+    <meta property="og:title" content="Sistema Suporte Replay Sports" />
+    <meta
+      property="og:description"
+      content="Sistema de suporte para prestação de serviços a empresa Replay Sports"
+    />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:locale" content="pt_BR" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://seu-dominio.com/" />
+    <meta property="twitter:title" content="Sistema Suporte Replay Sports" />
+    <meta
+      property="twitter:description"
+      content="Sistema de suporte para prestação de serviços a empresa Replay Sports"
+    />
+    <meta property="twitter:image" content="/og-image.png" />
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/logo.svg" />
+    
+    <!-- Preconnect para melhor performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Security Headers (será aplicado pelo servidor, mas documentado aqui) -->
+    <!-- 
+      Content-Security-Policy: default-src 'self'; 
+      script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+      style-src 'self' 'unsafe-inline'; 
+      img-src 'self' data: https:; 
+      font-src 'self' data:;
+    -->
   </head>
 
   <body>
     <div id="root"></div>
-    <script src="https://goskip.dev/skip.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

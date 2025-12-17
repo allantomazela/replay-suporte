@@ -1,94 +1,7 @@
-import { supabase } from '@/lib/supabase'
-import {
-  MOCK_CLIENTS,
-  MOCK_TICKETS,
-  MOCK_KNOWLEDGE_CATEGORIES,
-  MOCK_KNOWLEDGE_ARTICLES,
-  MOCK_TECHNICIANS,
-  MOCK_USER,
-} from '@/lib/mock-data'
+-- SCHEMA SQL PARA SUPABASE
+-- Execute este SQL no Supabase Dashboard > SQL Editor
+-- Copie e cole APENAS o conteúdo abaixo (sem as aspas ou comentários de código)
 
-export const seedDatabase = async () => {
-  if (!supabase) throw new Error('Supabase não configurado')
-
-  // Seed Clients
-  const { error: clientsError } = await supabase.from('clients').upsert(
-    MOCK_CLIENTS.map((c) => ({
-      id: c.id,
-      name: c.name,
-      city: c.city,
-      phone: c.phone,
-      arenaCode: c.arenaCode,
-      arenaName: c.arenaName,
-      active: c.active,
-      contractType: c.contractType,
-      technicalManager: c.technicalManager,
-    })),
-  )
-  if (clientsError) console.error('Clients seed error:', clientsError)
-
-  // Seed Tickets
-  const { error: ticketsError } = await supabase.from('tickets').upsert(
-    MOCK_TICKETS.map((t) => ({
-      id: t.id,
-      clientId: t.clientId,
-      clientName: t.clientName,
-      title: t.title,
-      description: t.description,
-      status: t.status,
-      responsibleId: t.responsibleId,
-      responsibleName: t.responsibleName,
-      created_at: t.createdAt,
-      updated_at: t.updatedAt,
-      customData: t.customData,
-      attachments: t.attachments,
-    })),
-  )
-  if (ticketsError) console.error('Tickets seed error:', ticketsError)
-
-  // Seed Categories
-  const { error: catsError } = await supabase
-    .from('knowledge_categories')
-    .upsert(MOCK_KNOWLEDGE_CATEGORIES)
-  if (catsError) console.error('Categories seed error:', catsError)
-
-  // Seed Articles
-  const { error: artsError } = await supabase.from('knowledge_articles').upsert(
-    MOCK_KNOWLEDGE_ARTICLES.map((a) => ({
-      id: a.id,
-      title: a.title,
-      excerpt: a.excerpt,
-      content: a.content,
-      categoryId: a.categoryId,
-      categoryName: a.categoryName,
-      author: a.author,
-      tags: a.tags,
-      views: a.views,
-      helpfulCount: a.helpfulCount,
-      isPublic: a.isPublic,
-      created_at: a.createdAt,
-      updated_at: a.updatedAt,
-    })),
-  )
-  if (artsError) console.error('Articles seed error:', artsError)
-
-  // Seed Technicians
-  const { error: techsError } = await supabase.from('technicians').upsert(
-    MOCK_TECHNICIANS.map((t) => ({
-      id: t.id,
-      name: t.name,
-      email: t.email,
-      phone: t.phone,
-      specialties: t.specialties,
-      active: t.active,
-    })),
-  )
-  if (techsError) console.error('Technicians seed error:', techsError)
-
-  return true
-}
-
-export const SCHEMA_SQL = `
 -- TABELAS PRINCIPAIS
 -- Profiles (Extensão da tabela auth.users)
 create table if not exists profiles (
@@ -335,4 +248,4 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
-`
+

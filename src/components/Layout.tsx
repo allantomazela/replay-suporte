@@ -3,23 +3,24 @@ import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { useAppContext } from '@/context/AppContext'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { Loader2 } from 'lucide-react'
+import { Loading } from '@/components/ui/loading'
+import { usePrefetch } from '@/hooks/use-prefetch'
 
 export default function Layout() {
   const { user, isLoading } = useAppContext()
   const location = useLocation()
+  
+  // Prefetch de dados baseado na rota
+  usePrefetch()
 
   // Ensure loading state blocks everything to prevent premature redirects
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin h-10 w-10 text-primary" />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            Verificando acesso...
-          </p>
-        </div>
-      </div>
+      <Loading
+        message="Verificando autenticação..."
+        size="lg"
+        fullScreen
+      />
     )
   }
 

@@ -42,7 +42,7 @@ export const MOCK_USERS_LIST: User[] = [
   {
     id: 'u4',
     name: 'Allan Tomazela',
-    email: 'allantomazela@gamail.com',
+    email: 'admin@example.com', // Substituir por email real do admin
     role: 'admin',
     avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=4',
   },

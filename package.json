@@ -9,10 +9,12 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
     "lint": "oxlint src",
     "lint:fix": "oxlint src --fix",
     "format": "prettier --write --cache .",
     "preview": "vite preview",
+    "validate": "node scripts/validate-production.js",
     "test": "echo \"there are no tests for this project\" && exit 0",
     "test:watch": "echo \"there are no tests for this project\" && exit 0"
   },

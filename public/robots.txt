@@ -1,0 +1,10 @@
+# robots.txt para Sistema Replay Suporte
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+# Sitemap (ajustar URL conforme necessário)
+# Sitemap: https://seu-dominio.com/sitemap.xml
+

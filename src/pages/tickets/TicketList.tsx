@@ -22,9 +22,48 @@ import { DateRange } from 'react-day-picker'
 import { Badge } from '@/components/ui/badge'
 import { TicketKanban } from '@/components/tickets/TicketKanban'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Skeleton } from '@/components/ui/skeleton'
+
+function TicketTableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton className="h-4 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-48" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-20" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-24" />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell className="text-right">
+            <div className="flex justify-end gap-1">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-8" />
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  )
+}
 
 export default function TicketList() {
-  const { tickets, clients } = useAppContext()
+  const { tickets, clients, isLoading } = useAppContext()
 
   // View Mode State
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table')
@@ -210,7 +249,10 @@ export default function TicketList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedTickets.map((ticket) => {
+                {isLoading && tickets.length === 0 ? (
+                  <TicketTableSkeleton />
+                ) : (
+                  paginatedTickets.map((ticket) => {
                   const client = clients.find((c) => c.id === ticket.clientId)
                   return (
                     <TableRow
@@ -275,7 +317,15 @@ export default function TicketList() {
                       </TableCell>
                     </TableRow>
                   )
-                })}
+                })
+                )}
+                {!isLoading && paginatedTickets.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                      Nenhum ticket encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
                 {paginatedTickets.length === 0 && (
                   <TableRow>
                     <TableCell

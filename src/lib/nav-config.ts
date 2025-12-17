@@ -97,10 +97,10 @@ export const NAV_CONFIG: Record<NavItemId, NavItemConfig> = {
   },
   technicians: {
     id: 'technicians',
-    label: 'Técnicos',
+    label: 'Técnicos Parceiros',
     path: '/technicians',
     icon: HardHat,
-    allowedRoles: ['admin', 'coordinator'],
+    allowedRoles: ['admin', 'coordinator', 'agent'], // Agentes podem ver, mas não editar (proteção na página)
   },
   profile: {
     id: 'profile',
